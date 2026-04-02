@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProtectedLayout } from "@/components/layout/ProtectedLayout";
+import { useState } from "react";
 
 export const metadata: Metadata = {
 	title: "Dashboard | InventoryOS",

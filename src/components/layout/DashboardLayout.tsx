@@ -20,15 +20,18 @@ export function DashboardLayout({
 	return (
 		<div className="flex h-screen bg-[#0F1117]">
 			{/* Sidebar */}
-			<Sidebar />
+			<Sidebar
+				isOpen={sidebarOpen}
+				onClose={() => setSidebarOpen(false)}
+			/>
 
 			{/* Mobile Sidebar Overlay */}
-			{sidebarOpen && (
+			{/* {sidebarOpen && (
 				<div
 					className="fixed inset-0 bg-black/50 z-30 lg:hidden"
 					onClick={() => setSidebarOpen(false)}
 				/>
-			)}
+			)} */}
 
 			{/* Main Content */}
 			<main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden">

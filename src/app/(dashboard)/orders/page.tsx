@@ -299,9 +299,6 @@ export default function OrdersPage() {
 				)}
 			</div>
 
-			{/* Loading State */}
-			{ordersLoading && <SkeletonGrid count={10} variant="row" />}
-
 			{/* Empty State */}
 			{isEmpty && (
 				<div className="flex flex-col items-center justify-center py-16 px-4">
@@ -344,7 +341,7 @@ export default function OrdersPage() {
 			)}
 
 			{/* Orders Table */}
-			{!isEmpty && (
+			{(!isEmpty || ordersLoading) && (
 				<div className="bg-[#13161F] border border-white/10 rounded-xl overflow-hidden">
 					<div className="overflow-x-auto">
 						<table className="w-full text-sm">
@@ -374,286 +371,335 @@ export default function OrdersPage() {
 								</tr>
 							</thead>
 							<tbody>
-								<AnimatePresence>
-									{orders.map((order) => (
-										<motion.tbody
-											key={order._id}
-											initial={{ opacity: 0 }}
-											animate={{ opacity: 1 }}
-											exit={{ opacity: 0 }}
-											className="contents"
+								{ordersLoading ? (
+									Array.from({ length: 8 }).map((_, i) => (
+										<tr
+											key={i}
+											className="border-b border-white/5"
 										>
-											{/* Main Row */}
-											<tr className="border-b border-white/5 hover:bg-white/5">
-												<td className="px-4 py-3 text-white font-mono font-bold">
-													{order.orderNumber}
-												</td>
-												<td className="px-4 py-3 text-white font-medium">
-													{order.customerName}
-												</td>
-												<td className="px-4 py-3 text-zinc-400">
-													<div className="group cursor-help">
-														{order.items.length}{" "}
-														item
-														{order.items.length !==
-														1
-															? "s"
-															: ""}
-														<div className="hidden group-hover:block absolute bg-black/90 text-white text-xs p-2 rounded mt-1 z-10 w-48 border border-white/20">
-															{order.items.map(
-																(item, idx) => (
-																	<div
-																		key={
-																			idx
-																		}
-																		className="truncate"
-																	>
-																		•{" "}
-																		{
-																			item.productName
-																		}
-																	</div>
-																),
+											<td className="px-4 py-3">
+												<div className="h-4 w-6 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-40 bg-white/10 rounded animate-pulse mb-1.5" />
+												<div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-16 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-6 w-20 bg-white/10 rounded-full animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-8 w-20 bg-white/10 rounded animate-pulse" />
+											</td>
+										</tr>
+									))
+								) : (
+									<AnimatePresence>
+										{orders.map((order) => (
+											<motion.tbody
+												key={order._id}
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												exit={{ opacity: 0 }}
+												className="contents"
+											>
+												{/* Main Row */}
+												<tr className="border-b border-white/5 hover:bg-white/5">
+													<td className="px-4 py-3 text-white font-mono font-bold">
+														{order.orderNumber}
+													</td>
+													<td className="px-4 py-3 text-white font-medium">
+														{order.customerName}
+													</td>
+													<td className="px-4 py-3 text-zinc-400">
+														<div className="group cursor-help">
+															{order.items.length}{" "}
+															item
+															{order.items
+																.length !== 1
+																? "s"
+																: ""}
+															<div className="hidden group-hover:block absolute bg-black/90 text-white text-xs p-2 rounded mt-1 z-10 w-48 border border-white/20">
+																{order.items.map(
+																	(
+																		item,
+																		idx,
+																	) => (
+																		<div
+																			key={
+																				idx
+																			}
+																			className="truncate"
+																		>
+																			•{" "}
+																			{
+																				item.productName
+																			}
+																		</div>
+																	),
+																)}
+															</div>
+														</div>
+													</td>
+													<td className="px-4 py-3 text-white font-semibold">
+														{formatPrice(
+															order.totalPrice,
+														)}
+													</td>
+													<td className="px-4 py-3">
+														<span
+															className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+																STATUS_COLORS[
+																	order.status
+																] ||
+																STATUS_COLORS[
+																	"Cancelled"
+																]
+															}`}
+														>
+															{order.status}
+														</span>
+													</td>
+													<td className="px-4 py-3 text-zinc-400 text-xs">
+														{formatDate(
+															order.createdAt,
+														)}
+													</td>
+													<td className="px-4 py-3">
+														<div className="flex items-center gap-2">
+															<button
+																onClick={() =>
+																	setExpandedOrderId(
+																		expandedOrderId ===
+																			order._id
+																			? null
+																			: order._id,
+																	)
+																}
+																className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition"
+																title="View"
+															>
+																<Eye className="w-4 h-4" />
+															</button>
+
+															{![
+																"Delivered",
+																"Cancelled",
+															].includes(
+																order.status,
+															) && (
+																<StatusDropdown
+																	order={
+																		order
+																	}
+																	onStatusChange={(
+																		newStatus,
+																	) => {
+																		setStatusConfirmDialog(
+																			{
+																				orderId:
+																					order._id,
+																				orderNumber:
+																					order.orderNumber,
+																				currentStatus:
+																					order.status,
+																				newStatus,
+																			},
+																		);
+																	}}
+																/>
+															)}
+
+															{[
+																"Delivered",
+																"Cancelled",
+															].includes(
+																order.status,
+															) && (
+																<button
+																	disabled
+																	className="p-1.5 text-zinc-600 cursor-not-allowed"
+																>
+																	<ChevronDown className="w-4 h-4" />
+																</button>
 															)}
 														</div>
-													</div>
-												</td>
-												<td className="px-4 py-3 text-white font-semibold">
-													{formatPrice(
-														order.totalPrice,
-													)}
-												</td>
-												<td className="px-4 py-3">
-													<span
-														className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-															STATUS_COLORS[
-																order.status
-															] ||
-															STATUS_COLORS[
-																"Cancelled"
-															]
-														}`}
-													>
-														{order.status}
-													</span>
-												</td>
-												<td className="px-4 py-3 text-zinc-400 text-xs">
-													{formatDate(
-														order.createdAt,
-													)}
-												</td>
-												<td className="px-4 py-3">
-													<div className="flex items-center gap-2">
-														<button
-															onClick={() =>
-																setExpandedOrderId(
-																	expandedOrderId ===
-																		order._id
-																		? null
-																		: order._id,
-																)
-															}
-															className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition"
-															title="View"
+													</td>
+												</tr>
+
+												{/* Expanded Row */}
+												<AnimatePresence>
+													{expandedOrderId ===
+														order._id && (
+														<motion.tr
+															initial={{
+																height: 0,
+															}}
+															animate={{
+																height: "auto",
+															}}
+															exit={{ height: 0 }}
+															className="border-b border-white/5 overflow-hidden bg-white/5"
 														>
-															<Eye className="w-4 h-4" />
-														</button>
-
-														{![
-															"Delivered",
-															"Cancelled",
-														].includes(
-															order.status,
-														) && (
-															<StatusDropdown
-																order={order}
-																onStatusChange={(
-																	newStatus,
-																) => {
-																	setStatusConfirmDialog(
-																		{
-																			orderId:
-																				order._id,
-																			orderNumber:
-																				order.orderNumber,
-																			currentStatus:
-																				order.status,
-																			newStatus,
-																		},
-																	);
-																}}
-															/>
-														)}
-
-														{[
-															"Delivered",
-															"Cancelled",
-														].includes(
-															order.status,
-														) && (
-															<button
-																disabled
-																className="p-1.5 text-zinc-600 cursor-not-allowed"
+															<td
+																colSpan={7}
+																className="px-4 py-4"
 															>
-																<ChevronDown className="w-4 h-4" />
-															</button>
-														)}
-													</div>
-												</td>
-											</tr>
-
-											{/* Expanded Row */}
-											<AnimatePresence>
-												{expandedOrderId ===
-													order._id && (
-													<motion.tr
-														initial={{ height: 0 }}
-														animate={{
-															height: "auto",
-														}}
-														exit={{ height: 0 }}
-														className="border-b border-white/5 overflow-hidden bg-white/5"
-													>
-														<td
-															colSpan={7}
-															className="px-4 py-4"
-														>
-															<div className="space-y-3 text-sm">
-																<div className="grid grid-cols-2 gap-4">
-																	<div>
-																		<p className="text-zinc-400 text-xs">
-																			Customer
-																		</p>
-																		<p className="text-white font-medium">
-																			{
-																				order.customerName
-																			}
-																		</p>
+																<div className="space-y-3 text-sm">
+																	<div className="grid grid-cols-2 gap-4">
+																		<div>
+																			<p className="text-zinc-400 text-xs">
+																				Customer
+																			</p>
+																			<p className="text-white font-medium">
+																				{
+																					order.customerName
+																				}
+																			</p>
+																		</div>
+																		<div>
+																			<p className="text-zinc-400 text-xs">
+																				Created
+																				by
+																			</p>
+																			<p className="text-white font-medium">
+																				{order
+																					.createdBy
+																					?.name ||
+																					"Unknown"}
+																			</p>
+																		</div>
 																	</div>
-																	<div>
-																		<p className="text-zinc-400 text-xs">
-																			Created
-																			by
-																		</p>
-																		<p className="text-white font-medium">
-																			{order
-																				.createdBy
-																				?.name ||
-																				"Unknown"}
-																		</p>
-																	</div>
-																</div>
 
-																<div className="border-t border-white/10 pt-3">
-																	<p className="text-zinc-400 text-xs mb-2">
-																		Items
-																	</p>
-																	<div className="space-y-2">
-																		{order.items.map(
-																			(
-																				item,
-																				idx,
-																			) => (
-																				<div
-																					key={
-																						idx
-																					}
-																					className="flex justify-between items-center bg-black/20 p-2 rounded"
-																				>
-																					<div>
-																						<p className="text-white">
-																							{
-																								item.productName
-																							}{" "}
-																							×
-																							{
-																								item.quantity
-																							}
-																						</p>
-																						<p className="text-zinc-400 text-xs">
-																							$
-																							{item.unitPrice.toFixed(
-																								2,
-																							)}{" "}
-																							each
+																	<div className="border-t border-white/10 pt-3">
+																		<p className="text-zinc-400 text-xs mb-2">
+																			Items
+																		</p>
+																		<div className="space-y-2">
+																			{order.items.map(
+																				(
+																					item,
+																					idx,
+																				) => (
+																					<div
+																						key={
+																							idx
+																						}
+																						className="flex justify-between items-center bg-black/20 p-2 rounded"
+																					>
+																						<div>
+																							<p className="text-white">
+																								{
+																									item.productName
+																								}{" "}
+																								×
+																								{
+																									item.quantity
+																								}
+																							</p>
+																							<p className="text-zinc-400 text-xs">
+																								$
+																								{item.unitPrice.toFixed(
+																									2,
+																								)}{" "}
+																								each
+																							</p>
+																						</div>
+																						<p className="text-white font-semibold">
+																							{formatPrice(
+																								item.subtotal,
+																							)}
 																						</p>
 																					</div>
-																					<p className="text-white font-semibold">
-																						{formatPrice(
-																							item.subtotal,
-																						)}
-																					</p>
-																				</div>
-																			),
-																		)}
+																				),
+																			)}
+																		</div>
+																	</div>
+
+																	<div className="border-t border-white/10 pt-3 text-right">
+																		<p className="text-zinc-400 text-xs">
+																			Total
+																		</p>
+																		<p className="text-2xl font-bold text-white">
+																			{formatPrice(
+																				order.totalPrice,
+																			)}
+																		</p>
 																	</div>
 																</div>
-
-																<div className="border-t border-white/10 pt-3 text-right">
-																	<p className="text-zinc-400 text-xs">
-																		Total
-																	</p>
-																	<p className="text-2xl font-bold text-white">
-																		{formatPrice(
-																			order.totalPrice,
-																		)}
-																	</p>
-																</div>
-															</div>
-														</td>
-													</motion.tr>
-												)}
-											</AnimatePresence>
-										</motion.tbody>
-									))}
-								</AnimatePresence>
+															</td>
+														</motion.tr>
+													)}
+												</AnimatePresence>
+											</motion.tbody>
+										))}
+									</AnimatePresence>
+								)}
 							</tbody>
 						</table>
 					</div>
 
 					{/* Pagination */}
-					<div className="flex items-center justify-between px-4 py-4 border-t border-white/10">
-						<div className="text-sm text-zinc-400">
-							Showing {(page - 1) * LIMIT + 1}–
-							{Math.min(page * LIMIT, total)} of {total} orders
-						</div>
-						<div className="flex gap-2">
-							<button
-								onClick={() => setPage(Math.max(1, page - 1))}
-								disabled={page === 1}
-								className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-							>
-								←
-							</button>
+					{!ordersLoading && (
+						<div className="flex items-center justify-between px-4 py-4 border-t border-white/10">
+							<div className="text-sm text-zinc-400">
+								Showing {(page - 1) * LIMIT + 1}–
+								{Math.min(page * LIMIT, total)} of {total}{" "}
+								orders
+							</div>
+							<div className="flex gap-2">
+								<button
+									onClick={() =>
+										setPage(Math.max(1, page - 1))
+									}
+									disabled={page === 1}
+									className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									←
+								</button>
 
-							{Array.from({ length: totalPages }).map((_, i) => {
-								const pageNum = i + 1;
-								return (
-									<button
-										key={pageNum}
-										onClick={() => setPage(pageNum)}
-										className={`px-3 py-1 rounded text-sm ${
-											page === pageNum
-												? "bg-indigo-600 text-white"
-												: "hover:bg-white/10 text-zinc-400"
-										}`}
-									>
-										{pageNum}
-									</button>
-								);
-							})}
+								{Array.from({ length: totalPages }).map(
+									(_, i) => {
+										const pageNum = i + 1;
+										return (
+											<button
+												key={pageNum}
+												onClick={() => setPage(pageNum)}
+												className={`px-3 py-1 rounded text-sm ${
+													page === pageNum
+														? "bg-indigo-600 text-white"
+														: "hover:bg-white/10 text-zinc-400"
+												}`}
+											>
+												{pageNum}
+											</button>
+										);
+									},
+								)}
 
-							<button
-								onClick={() =>
-									setPage(Math.min(totalPages, page + 1))
-								}
-								disabled={page === totalPages}
-								className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-							>
-								→
-							</button>
+								<button
+									onClick={() =>
+										setPage(Math.min(totalPages, page + 1))
+									}
+									disabled={page === totalPages}
+									className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									→
+								</button>
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			)}
 

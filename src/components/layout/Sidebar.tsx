@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -31,11 +31,20 @@ interface NavItem {
 	badgeColor?: string;
 }
 
-export function Sidebar() {
+interface SidebarProps {
+	isOpen: boolean;
+	onClose: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
 	const [collapsed, setCollapsed] = useState(false);
 	const pathname = usePathname();
 	const { user, clearUser } = useAuthStore();
 	const router = useRouter();
+
+	useEffect(() => {
+		onClose();
+	}, [pathname]);
 
 	// Fetch restock count
 	const { data: restockCount = 0 } = useQuery({
@@ -51,14 +60,14 @@ export function Sidebar() {
 			icon: <LayoutDashboard className="w-5 h-5" />,
 		},
 		{
-			label: "Products",
-			href: "/products",
-			icon: <Package className="w-5 h-5" />,
-		},
-		{
 			label: "Categories",
 			href: "/categories",
 			icon: <Tag className="w-5 h-5" />,
+		},
+		{
+			label: "Products",
+			href: "/products",
+			icon: <Package className="w-5 h-5" />,
 		},
 		{
 			label: "Orders",
@@ -123,7 +132,7 @@ export function Sidebar() {
 				</div>
 
 				{/* Navigation */}
-				<nav className="flex-1 overflow-y-auto py-4 px-2">
+				<nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2">
 					<div className="space-y-1">
 						{navItems.map((item) => (
 							<div key={item.href} className="relative group">
@@ -131,13 +140,16 @@ export function Sidebar() {
 									<span
 										className={cn(
 											"flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+											collapsed
+												? "justify-center px-2"
+												: "justify-between px-3",
 											"text-zinc-400 hover:text-white hover:bg-white/5",
 											isActive(item.href) &&
 												"text-indigo-400 bg-indigo-500/10 border-l-2 border-indigo-500 pl-[10px]",
 										)}
 									>
 										<div className="flex items-center gap-3 flex-1 min-w-0">
-											<span className="flex-shrink-0">
+											<span className="flex-shrink-0 w-5 h-5">
 												{item.icon}
 											</span>
 											{!collapsed && (
@@ -216,6 +228,52 @@ export function Sidebar() {
 			</aside>
 
 			{/* Mobile Sidebar Toggle Button (shown in topbar on mobile) */}
+			{/* Mobile Sidebar */}
+			<div
+				className={cn(
+					"fixed inset-0 z-50 lg:hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+					isOpen
+						? "opacity-100 pointer-events-auto"
+						: "opacity-0 pointer-events-none",
+				)}
+			>
+				<div
+					className={cn(
+						"absolute inset-0 bg-black/50 transition-opacity duration-300",
+						isOpen ? "opacity-100" : "opacity-0",
+					)}
+					onClick={onClose}
+				/>
+
+				<aside
+					onClick={(e) => e.stopPropagation()}
+					className={cn(
+						"absolute left-0 top-0 h-full w-[240px] bg-[#13161F] border-r border-white/10 transform transition-transform duration-300 ease-in-out",
+						isOpen ? "translate-x-0" : "-translate-x-full",
+					)}
+				>
+					{/* Header */}
+					<div className="flex items-center justify-between p-4 border-b border-white/10">
+						<h1 className="text-white font-bold">InventoryOS</h1>
+						<button onClick={onClose}>✕</button>
+					</div>
+
+					{/* Nav */}
+					<nav className="p-2 space-y-1">
+						{navItems.map((item) => (
+							<Link key={item.href} href={item.href}>
+								<span
+									onClick={onClose}
+									className="flex items-center gap-3 px-3 py-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg"
+								>
+									{item.icon}
+									{item.label}
+								</span>
+							</Link>
+						))}
+					</nav>
+				</aside>
+			</div>
 		</>
 	);
 }

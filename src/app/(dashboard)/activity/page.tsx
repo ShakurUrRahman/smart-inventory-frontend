@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ShoppingCart, Package, ArrowUp, User, Tag, X } from "lucide-react";
+import { ShoppingCart, Package, ArrowUp, User, Tag } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { SkeletonGrid } from "@/components/shared/Skeleton";
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
+import apiClient from "@/lib/api";
 
 const ENTITY_TYPES = ["all", "Order", "Product", "Stock", "User", "Category"];
 
@@ -38,6 +38,11 @@ const ENTITY_COLORS: Record<string, { bg: string; text: string; dot: string }> =
 			text: "text-amber-400",
 			dot: "bg-amber-500",
 		},
+		RestockQueue: {
+			bg: "bg-rose-500/20",
+			text: "text-rose-400",
+			dot: "bg-rose-500",
+		},
 	};
 
 const ENTITY_ICONS: Record<string, any> = {
@@ -46,6 +51,7 @@ const ENTITY_ICONS: Record<string, any> = {
 	Stock: ArrowUp,
 	User: User,
 	Category: Tag,
+	RestockQueue: ArrowUp,
 };
 
 interface ActivityEntry {
@@ -55,6 +61,7 @@ interface ActivityEntry {
 	description: string;
 	createdAt: string;
 	userId?: { name: string };
+	performedBy?: { name: string };
 }
 
 interface ActivityResponse {
@@ -78,16 +85,59 @@ async function getActivityLogs(params: {
 	if (params.page) query.append("page", params.page.toString());
 	if (params.limit) query.append("limit", params.limit.toString());
 
-	const response = await fetch(
-		`${process.env.NEXT_PUBLIC_API_URL}/activity?${query.toString()}`,
-		{
-			headers: { "Content-Type": "application/json" },
-			credentials: "include",
-		},
-	);
+	const response = await apiClient.get(`/activity?${query.toString()}`);
+	return response.data;
+}
 
-	if (!response.ok) throw new Error("Failed to fetch activity logs");
-	return response.json();
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function ActivitySkeleton() {
+	const dotColors = [
+		"bg-indigo-500",
+		"bg-blue-500",
+		"bg-green-500",
+		"bg-violet-500",
+		"bg-amber-500",
+	];
+
+	return (
+		<div className="max-w-3xl mx-auto space-y-6">
+			{Array.from({ length: 5 }).map((_, i) => (
+				<div key={i} className="relative">
+					{/* Timeline dot and line */}
+					<div className="absolute left-0 top-0 w-12 flex justify-center">
+						<div className="relative flex flex-col items-center">
+							<div
+								className={`w-6 h-6 rounded-full ${dotColors[i % dotColors.length]} border-4 border-[#0a0d12] animate-pulse`}
+							/>
+							{i < 4 && (
+								<div
+									className={`w-1 h-24 ${dotColors[i % dotColors.length]} opacity-30 mt-2`}
+								/>
+							)}
+						</div>
+					</div>
+
+					{/* Card skeleton */}
+					<div className="ml-20 bg-[#13161F] border border-white/10 rounded-xl p-5">
+						<div className="flex items-start justify-between gap-4 mb-3">
+							<div className="flex-1 space-y-2">
+								{/* Time */}
+								<div className="h-3 w-32 bg-white/10 rounded animate-pulse" />
+								{/* Description */}
+								<div className="h-4 w-3/4 bg-white/10 rounded animate-pulse" />
+								{/* Second line of description */}
+								<div className="h-4 w-1/2 bg-white/10 rounded animate-pulse" />
+								{/* By user */}
+								<div className="h-3 w-24 bg-white/10 rounded animate-pulse mt-1" />
+							</div>
+							{/* Badge */}
+							<div className="h-6 w-20 bg-white/10 rounded-full animate-pulse flex-shrink-0" />
+						</div>
+					</div>
+				</div>
+			))}
+		</div>
+	);
 }
 
 export default function ActivityPage() {
@@ -112,11 +162,7 @@ export default function ActivityPage() {
 	const { data: activityData, isLoading } = useQuery({
 		queryKey: ["activity-logs", { entityFilter, page }],
 		queryFn: () =>
-			getActivityLogs({
-				entityType: entityFilter,
-				page,
-				limit: LIMIT,
-			}),
+			getActivityLogs({ entityType: entityFilter, page, limit: LIMIT }),
 	});
 
 	const logs = activityData?.data || [];
@@ -168,7 +214,7 @@ export default function ActivityPage() {
 			</div>
 
 			{/* Loading State */}
-			{isLoading && <SkeletonGrid count={5} variant="row" />}
+			{isLoading && <ActivitySkeleton />}
 
 			{/* Empty State */}
 			{isEmpty && (
@@ -186,7 +232,7 @@ export default function ActivityPage() {
 			)}
 
 			{/* Timeline */}
-			{!isEmpty && (
+			{!isLoading && !isEmpty && (
 				<div className="max-w-3xl mx-auto">
 					<div className="space-y-6">
 						{logs.map((log, idx) => {
@@ -200,8 +246,8 @@ export default function ActivityPage() {
 							return (
 								<motion.div
 									key={log._id}
-									initial={{ opacity: 0, x: -20 }}
-									animate={{ opacity: 1, x: 0 }}
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
 									transition={{ delay: idx * 0.05 }}
 									className="relative"
 								>
@@ -215,7 +261,7 @@ export default function ActivityPage() {
 											</div>
 											{!isLast && (
 												<div
-													className={`w-1 h-24 ${colors.dot} mt-2`}
+													className={`w-1 h-24 ${colors.dot} opacity-30 mt-2`}
 												/>
 											)}
 										</div>
@@ -236,8 +282,8 @@ export default function ActivityPage() {
 												<p className="text-xs text-zinc-400 mt-2">
 													by{" "}
 													<span className="text-zinc-300">
-														{log.userId?.name ||
-															"System"}
+														{log.performedBy
+															?.name || "System"}
 													</span>
 												</p>
 											</div>
@@ -267,7 +313,6 @@ export default function ActivityPage() {
 							>
 								←
 							</button>
-
 							{Array.from({ length: totalPages }).map((_, i) => {
 								const pageNum = i + 1;
 								return (
@@ -284,7 +329,6 @@ export default function ActivityPage() {
 									</button>
 								);
 							})}
-
 							<button
 								onClick={() =>
 									setPage(Math.min(totalPages, page + 1))

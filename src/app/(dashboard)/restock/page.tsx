@@ -221,9 +221,6 @@ export default function RestockPage() {
 				))}
 			</div>
 
-			{/* Loading State */}
-			{isLoading && <SkeletonGrid count={10} variant="row" />}
-
 			{/* Empty State */}
 			{isEmpty && (
 				<div className="flex flex-col items-center justify-center py-16 px-4">
@@ -240,10 +237,10 @@ export default function RestockPage() {
 			)}
 
 			{/* Restock Queue Table */}
-			{!isEmpty && (
+			{(!isEmpty || isLoading) && (
 				<div className="bg-[#13161F] border border-white/10 rounded-xl overflow-hidden">
-					<div className="overflow-x-auto">
-						<table className="w-full text-sm">
+					<div className="overflow-x-auto overflow-y-hidden">
+						<table className="w-full min-w-full text-sm">
 							<thead>
 								<tr className="border-b border-white/10 bg-black/20">
 									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
@@ -270,149 +267,195 @@ export default function RestockPage() {
 								</tr>
 							</thead>
 							<tbody>
-								<AnimatePresence>
-									{items.map((item) => {
-										const percentage = getStockPercentage(
-											item.currentStock,
-											item.product.minStockThreshold,
-										);
-										const barColor =
-											getProgressBarColor(percentage);
+								{isLoading ? (
+									Array.from({ length: 8 }).map((_, i) => (
+										<tr
+											key={i}
+											className="border-b border-white/5"
+										>
+											<td className="px-4 py-3">
+												<div className="h-4 w-6 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-40 bg-white/10 rounded animate-pulse mb-1.5" />
+												<div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-16 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-6 w-20 bg-white/10 rounded-full animate-pulse" />
+											</td>
+											<td className="px-4 py-3">
+												<div className="h-8 w-20 bg-white/10 rounded animate-pulse" />
+											</td>
+										</tr>
+									))
+								) : (
+									<AnimatePresence>
+										{items.map((item) => {
+											const percentage =
+												getStockPercentage(
+													item.currentStock,
+													item.product
+														.minStockThreshold,
+												);
+											const barColor =
+												getProgressBarColor(percentage);
 
-										return (
-											<motion.tr
-												key={item._id}
-												initial={{ opacity: 0, x: -20 }}
-												animate={{ opacity: 1, x: 0 }}
-												exit={{ opacity: 0, x: -20 }}
-												className="border-b border-white/5 hover:bg-white/5"
-											>
-												<td className="px-4 py-3 text-white font-medium">
-													{item.product.name}
-												</td>
-												<td className="px-4 py-3 text-zinc-400">
-													{item.product.category ||
-														"—"}
-												</td>
-												<td className="px-4 py-3">
-													<div className="space-y-2">
-														<p className="text-red-400 font-bold text-lg">
-															{item.currentStock}
-														</p>
-														<div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-															<div
-																className={`h-full ${barColor} transition-all`}
-																style={{
-																	width: `${percentage}%`,
-																}}
-															/>
+											return (
+												<motion.tr
+													key={item._id}
+													initial={{ opacity: 0 }}
+													animate={{ opacity: 1 }}
+													exit={{
+														opacity: 0,
+													}}
+													className="border-b border-white/5 hover:bg-white/5"
+												>
+													<td className="px-4 py-3 text-white font-medium">
+														{item.product.name}
+													</td>
+													<td className="px-4 py-3 text-zinc-400">
+														{item.product.category
+															.name || "—"}
+													</td>
+													<td className="px-4 py-3">
+														<div className="space-y-2">
+															<p className="text-red-400 font-bold text-lg">
+																{
+																	item.currentStock
+																}
+															</p>
+															<div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+																<div
+																	className={`h-full ${barColor} transition-all`}
+																	style={{
+																		width: `${percentage}%`,
+																	}}
+																/>
+															</div>
 														</div>
-													</div>
-												</td>
-												<td className="px-4 py-3 text-zinc-400">
-													{
-														item.product
-															.minStockThreshold
-													}
-												</td>
-												<td className="px-4 py-3">
-													<span
-														className={`px-2.5 py-1 rounded-full text-xs font-medium border flex w-fit items-center gap-1 ${
-															PRIORITY_COLORS[
-																item.priority
-															]
-														}`}
-													>
+													</td>
+													<td className="px-4 py-3 text-zinc-400">
 														{
-															PRIORITY_ICONS[
-																item.priority
-															]
-														}{" "}
-														{item.priority}
-													</span>
-												</td>
-												<td className="px-4 py-3 text-zinc-400 text-xs">
-													{formatRelativeTime(
-														item.createdAt,
-													)}
-												</td>
-												<td className="px-4 py-3">
-													<div className="flex items-center gap-2">
-														<button
-															onClick={() =>
-																handleRestockClick(
-																	item,
-																)
-															}
-															className="p-1.5 rounded hover:bg-green-500/20 text-green-400 transition"
-															title="Restock"
+															item.product
+																.minStockThreshold
+														}
+													</td>
+													<td className="px-4 py-3">
+														<span
+															className={`px-2.5 py-1 rounded-full text-xs font-medium border flex w-fit items-center gap-1 ${
+																PRIORITY_COLORS[
+																	item
+																		.priority
+																]
+															}`}
 														>
-															<ArrowUp className="w-4 h-4" />
-														</button>
-														<button
-															onClick={() =>
-																handleRemoveClick(
-																	item,
-																)
-															}
-															className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
-															title="Remove from queue"
-														>
-															<Trash2 className="w-4 h-4" />
-														</button>
-													</div>
-												</td>
-											</motion.tr>
-										);
-									})}
-								</AnimatePresence>
+															{
+																PRIORITY_ICONS[
+																	item
+																		.priority
+																]
+															}{" "}
+															{item.priority}
+														</span>
+													</td>
+													<td className="px-4 py-3 text-zinc-400 text-xs">
+														{formatRelativeTime(
+															item.createdAt,
+														)}
+													</td>
+													<td className="px-4 py-3">
+														<div className="flex items-center gap-2">
+															<button
+																onClick={() =>
+																	handleRestockClick(
+																		item,
+																	)
+																}
+																className="p-1.5 rounded hover:bg-green-500/20 text-green-400 transition"
+																title="Restock"
+															>
+																<ArrowUp className="w-4 h-4" />
+															</button>
+															<button
+																onClick={() =>
+																	handleRemoveClick(
+																		item,
+																	)
+																}
+																className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
+																title="Remove from queue"
+															>
+																<Trash2 className="w-4 h-4" />
+															</button>
+														</div>
+													</td>
+												</motion.tr>
+											);
+										})}
+									</AnimatePresence>
+								)}
 							</tbody>
 						</table>
 					</div>
 
 					{/* Pagination */}
-					<div className="flex items-center justify-between px-4 py-4 border-t border-white/10">
-						<div className="text-sm text-zinc-400">
-							Showing {(page - 1) * LIMIT + 1}–
-							{Math.min(page * LIMIT, total)} of {total} items
-						</div>
-						<div className="flex gap-2">
-							<button
-								onClick={() => setPage(Math.max(1, page - 1))}
-								disabled={page === 1}
-								className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-							>
-								←
-							</button>
+					{!isLoading && (
+						<div className="flex items-center justify-between px-4 py-4 border-t border-white/10">
+							<div className="text-sm text-zinc-400">
+								Showing {(page - 1) * LIMIT + 1}–
+								{Math.min(page * LIMIT, total)} of {total} items
+							</div>
+							<div className="flex gap-2">
+								<button
+									onClick={() =>
+										setPage(Math.max(1, page - 1))
+									}
+									disabled={page === 1}
+									className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									←
+								</button>
 
-							{Array.from({ length: totalPages }).map((_, i) => {
-								const pageNum = i + 1;
-								return (
-									<button
-										key={pageNum}
-										onClick={() => setPage(pageNum)}
-										className={`px-3 py-1 rounded text-sm ${
-											page === pageNum
-												? "bg-indigo-600 text-white"
-												: "hover:bg-white/10 text-zinc-400"
-										}`}
-									>
-										{pageNum}
-									</button>
-								);
-							})}
+								{Array.from({ length: totalPages }).map(
+									(_, i) => {
+										const pageNum = i + 1;
+										return (
+											<button
+												key={pageNum}
+												onClick={() => setPage(pageNum)}
+												className={`px-3 py-1 rounded text-sm ${
+													page === pageNum
+														? "bg-indigo-600 text-white"
+														: "hover:bg-white/10 text-zinc-400"
+												}`}
+											>
+												{pageNum}
+											</button>
+										);
+									},
+								)}
 
-							<button
-								onClick={() =>
-									setPage(Math.min(totalPages, page + 1))
-								}
-								disabled={page === totalPages}
-								className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-							>
-								→
-							</button>
+								<button
+									onClick={() =>
+										setPage(Math.min(totalPages, page + 1))
+									}
+									disabled={page === totalPages}
+									className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									→
+								</button>
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			)}
 

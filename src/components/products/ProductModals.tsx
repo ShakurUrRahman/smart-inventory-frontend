@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -106,6 +106,25 @@ export function AddEditProductDialog({
 					minStockThreshold: 1,
 				},
 	});
+
+	useEffect(() => {
+		if (product) {
+			reset({
+				name: product.name,
+				category: product.category._id,
+				price: product.price,
+				minStockThreshold: product.minStockThreshold,
+			});
+		} else {
+			reset({
+				name: "",
+				category: "",
+				price: 0,
+				stock: 0,
+				minStockThreshold: 1,
+			});
+		}
+	}, [product, reset]);
 
 	const stock = watch("stock" as any);
 	const minStockThreshold = watch("minStockThreshold");
