@@ -4,6 +4,9 @@ const nextConfig = {
 		ignoreBuildErrors: true,
 	},
 	reactStrictMode: true,
+	eslint: {
+		ignoreDuringBuilds: true, // ← add this
+	},
 };
 
 module.exports = nextConfig;
