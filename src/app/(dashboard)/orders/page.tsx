@@ -17,14 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SkeletonGrid } from "@/components/shared/Skeleton";
 import { ordersApi, Order } from "@/lib/ordersApi";
-import { productsApi } from "@/lib/productsApi";
 import { categoriesApi } from "@/lib/categoriesApi";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
 import CreateOrderDrawer from "@/components/orders/CreateOrderDrawer";
-import { StatusDropdown } from "@/components/orders/StatusDropdown";
-import { StatusConfirmDialog } from "@/components/orders/StatusConfirmDialog";
+import {
+	StatusConfirmDialog,
+	StatusDropdown,
+} from "@/components/orders/StatusDropdown";
 import { useDebounce } from "@/hooks/useSearch";
 
 const STATUS_OPTIONS = [

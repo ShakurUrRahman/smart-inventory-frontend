@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Package, Pencil } from "lucide-react";
 import { SkeletonGrid } from "@/components/shared/Skeleton";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
-import { DeleteCategoryDialog } from "@/components/categories/DeleteCategoryDialog";
 import { UpdateCategoryDialog } from "@/components/categories/UpdateCategoryDialog";
 import { categoriesApi, Category } from "@/lib/categoriesApi";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { DeleteCategoryDialog } from "@/components/categories/DeleteCategoryDialog";
 
 export default function CategoriesPage() {
 	const queryClient = useQueryClient();
