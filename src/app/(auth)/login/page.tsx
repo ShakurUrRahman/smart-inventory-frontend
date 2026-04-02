@@ -24,7 +24,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
 	const router = useRouter();
-	const { setUser } = useAuthStore();
+	const { setUser, setToken } = useAuthStore();
 	const [serverError, setServerError] = useState<string | null>(null);
 
 	const {
@@ -41,6 +41,7 @@ export default function LoginPage() {
 			setServerError(null);
 			const res = await loginUser(data.email, data.password);
 			setUser(res.user);
+			setToken(res.token);
 			toast.success("Signed in successfully!");
 			router.push("/dashboard");
 		} catch (err: any) {

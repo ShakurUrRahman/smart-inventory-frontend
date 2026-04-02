@@ -9,6 +9,23 @@ const apiClient = axios.create({
 	},
 });
 
+apiClient.interceptors.request.use(
+	(config) => {
+		try {
+			const authData = localStorage.getItem("auth-store");
+			if (authData) {
+				const parsed = JSON.parse(authData);
+				const token = parsed?.state?.token;
+				if (token) {
+					config.headers.Authorization = `Bearer ${token}`;
+				}
+			}
+		} catch (e) {}
+		return config;
+	},
+	(error) => Promise.reject(error),
+);
+
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
 	(response) => response,

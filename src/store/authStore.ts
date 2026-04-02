@@ -12,9 +12,11 @@ export interface User {
 
 interface AuthStore {
 	user: User | null;
+	token: string | null;
 	isLoading: boolean;
 	isHydrated: boolean;
 	setUser: (user: User) => void;
+	setToken: (token: string) => void;
 	clearUser: () => void;
 	setIsLoading: (loading: boolean) => void;
 	setIsHydrated: (hydrated: boolean) => void;
@@ -25,14 +27,17 @@ export const useAuthStore = create<AuthStore>()(
 	persist(
 		(set) => ({
 			user: null,
+			token: null,
+
 			isLoading: false,
 			isHydrated: false,
 
 			setUser: (user: User) => set({ user }),
+			setToken: (token: string) => set({ token }),
 
 			clearUser: () => {
 				// Clear Zustand state
-				set({ user: null, isHydrated: false });
+				set({ user: null, token: null, isHydrated: false });
 				// Also clear localStorage manually
 				try {
 					localStorage.removeItem("auth-store");
@@ -68,7 +73,7 @@ export const useAuthStore = create<AuthStore>()(
 		}),
 		{
 			name: "auth-store",
-			partialize: (state) => ({ user: state.user }),
+			partialize: (state) => ({ user: state.user, token: state.token }),
 		},
 	),
 );
