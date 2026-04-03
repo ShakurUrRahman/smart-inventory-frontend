@@ -1,6 +1,7 @@
 import apiClient from "./api";
 
 export interface DashboardStats {
+	totalOrders: number;
 	totalOrdersToday: number;
 	pendingOrders: number;
 	confirmedOrders: number;

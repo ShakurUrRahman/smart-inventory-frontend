@@ -54,10 +54,12 @@ export function AddCategoryDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle>Add Category</DialogTitle>
-					<DialogDescription>
+			<DialogContent className="w-[calc(100%-2rem)] max-w-md mx-auto rounded-xl p-5 sm:p-6">
+				<DialogHeader className="mb-2">
+					<DialogTitle className="text-lg sm:text-xl">
+						Add Category
+					</DialogTitle>
+					<DialogDescription className="text-sm text-zinc-400">
 						Create a new category for organizing your products.
 					</DialogDescription>
 				</DialogHeader>
@@ -67,13 +69,13 @@ export function AddCategoryDialog({
 					className="space-y-4"
 				>
 					<div className="space-y-1.5">
-						<Label htmlFor="name" className="text-zinc-300">
+						<Label htmlFor="name" className="text-zinc-300 text-sm">
 							Category Name
 						</Label>
 						<Input
 							id="name"
 							placeholder="e.g., Electronics, Clothing"
-							className="bg-[#1C1F2A] border-zinc-700/60"
+							className="bg-[#1C1F2A] border-zinc-700/60 h-10"
 							disabled={isLoading}
 							{...register("name")}
 						/>
@@ -84,18 +86,19 @@ export function AddCategoryDialog({
 						)}
 					</div>
 
-					<div className="flex justify-end gap-2 pt-4">
+					<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
 						<Button
 							type="button"
 							variant="outline"
 							onClick={() => onOpenChange(false)}
 							disabled={isLoading}
+							className="w-full sm:w-auto"
 						>
 							Cancel
 						</Button>
 						<Button
 							type="submit"
-							className="bg-indigo-600 hover:bg-indigo-500"
+							className="bg-indigo-600 hover:bg-indigo-500 w-full sm:w-auto"
 							disabled={isLoading}
 						>
 							{isLoading ? (

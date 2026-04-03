@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Package, Trash2, ArrowUp } from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -27,7 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Category } from "@/lib/categoriesApi";
 import { Product } from "@/lib/productsApi";
 
-// Validation schemas
+// ─── Schemas ──────────────────────────────────────────────────────────────────
 const productSchema = z.object({
 	name: z.string().min(2, "Product name must be at least 2 characters"),
 	category: z.string().min(1, "Category is required"),
@@ -51,6 +51,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 type EditProductFormData = z.infer<typeof editProductSchema>;
 type RestockFormData = z.infer<typeof restockSchema>;
 
+// ─── Interfaces ───────────────────────────────────────────────────────────────
 interface AddEditProductDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -76,6 +77,7 @@ interface RestockProductDialogProps {
 	isLoading?: boolean;
 }
 
+// ─── Add / Edit Dialog ────────────────────────────────────────────────────────
 export function AddEditProductDialog({
 	open,
 	onOpenChange,
@@ -85,6 +87,7 @@ export function AddEditProductDialog({
 	isLoading = false,
 }: AddEditProductDialogProps) {
 	const isEdit = !!product;
+
 	const {
 		register,
 		handleSubmit,
@@ -93,18 +96,6 @@ export function AddEditProductDialog({
 		formState: { errors },
 	} = useForm<ProductFormData | EditProductFormData>({
 		resolver: zodResolver(isEdit ? editProductSchema : productSchema),
-		defaultValues: isEdit
-			? {
-					name: product.name,
-					category: product.category._id,
-					price: product.price,
-					minStockThreshold: product.minStockThreshold,
-				}
-			: {
-					price: 0,
-					stock: 0,
-					minStockThreshold: 1,
-				},
 	});
 
 	useEffect(() => {
@@ -127,7 +118,6 @@ export function AddEditProductDialog({
 	}, [product, reset]);
 
 	const stock = watch("stock" as any);
-	const minStockThreshold = watch("minStockThreshold");
 
 	const getStatus = () => {
 		if (isEdit) return product.status;
@@ -141,31 +131,51 @@ export function AddEditProductDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle>
-						{isEdit ? "Edit Product" : "Add Product"}
-					</DialogTitle>
-					<DialogDescription>
-						{isEdit
-							? "Update product information"
-							: "Create a new product for your inventory"}
-					</DialogDescription>
+			<DialogContent
+				className="
+					w-full max-w-lg
+					mx-auto
+					max-h-[90dvh] overflow-y-auto
+					bg-[#13151C] border border-white/10 text-white
+					p-4 sm:p-6
+					rounded-2xl
+				"
+			>
+				<DialogHeader className="mb-2">
+					<div className="flex items-center gap-3">
+						<div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+							<Package className="w-4 h-4 text-indigo-400" />
+						</div>
+						<div>
+							<DialogTitle className="text-white text-lg font-semibold">
+								{isEdit ? "Edit Product" : "Add Product"}
+							</DialogTitle>
+							<DialogDescription className="text-zinc-400 text-sm mt-0.5">
+								{isEdit
+									? "Update product information"
+									: "Create a new product for your inventory"}
+							</DialogDescription>
+						</div>
+					</div>
 				</DialogHeader>
 
 				<form
 					onSubmit={handleSubmit(handleFormSubmit)}
-					className="space-y-4"
+					className="space-y-4 mt-2"
 				>
 					{/* Product Name */}
 					<div className="space-y-1.5">
-						<Label htmlFor="name" className="text-zinc-300">
+						<Label
+							htmlFor="name"
+							className="text-zinc-300 text-sm font-medium"
+						>
 							Product Name
 						</Label>
 						<Input
 							id="name"
 							placeholder="e.g., Laptop"
-							className="bg-[#1C1F2A] border-zinc-700/60"
+							className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-600
+							           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10"
 							disabled={isLoading}
 							{...register("name")}
 						/>
@@ -178,12 +188,17 @@ export function AddEditProductDialog({
 
 					{/* Category */}
 					<div className="space-y-1.5">
-						<Label htmlFor="category" className="text-zinc-300">
+						<Label
+							htmlFor="category"
+							className="text-zinc-300 text-sm font-medium"
+						>
 							Category
 						</Label>
 						<select
 							id="category"
-							className="w-full px-3 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white"
+							className="w-full h-10 px-3 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60
+							           text-white text-sm focus:border-indigo-500 focus:outline-none
+							           focus:ring-2 focus:ring-indigo-500/20 transition-colors"
 							disabled={isLoading}
 							{...register("category")}
 						>
@@ -201,56 +216,69 @@ export function AddEditProductDialog({
 						)}
 					</div>
 
-					{/* Price */}
-					<div className="space-y-1.5">
-						<Label htmlFor="price" className="text-zinc-300">
-							Price ($)
-						</Label>
-						<Input
-							id="price"
-							type="number"
-							step="0.01"
-							min="0"
-							placeholder="0.00"
-							className="bg-[#1C1F2A] border-zinc-700/60"
-							disabled={isLoading}
-							{...register("price", { valueAsNumber: true })}
-						/>
-						{errors.price && (
-							<p className="text-red-400 text-xs">
-								{errors.price.message}
-							</p>
-						)}
-					</div>
-
-					{/* Stock (only on add) */}
-					{!isEdit && (
+					{/* Price + Stock (side by side on sm+) */}
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						{/* Price */}
 						<div className="space-y-1.5">
-							<Label htmlFor="stock" className="text-zinc-300">
-								Stock Quantity
+							<Label
+								htmlFor="price"
+								className="text-zinc-300 text-sm font-medium"
+							>
+								Price ($)
 							</Label>
 							<Input
-								id="stock"
+								id="price"
 								type="number"
+								step="0.01"
 								min="0"
-								placeholder="0"
-								className="bg-[#1C1F2A] border-zinc-700/60"
+								placeholder="0.00"
+								className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-600
+								           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10"
 								disabled={isLoading}
-								{...register("stock", { valueAsNumber: true })}
+								{...register("price", { valueAsNumber: true })}
 							/>
-							{(errors as any).stock && (
+							{errors.price && (
 								<p className="text-red-400 text-xs">
-									{(errors as any).stock.message}
+									{errors.price.message}
 								</p>
 							)}
 						</div>
-					)}
+
+						{/* Stock (only on add) */}
+						{!isEdit && (
+							<div className="space-y-1.5">
+								<Label
+									htmlFor="stock"
+									className="text-zinc-300 text-sm font-medium"
+								>
+									Stock Qty
+								</Label>
+								<Input
+									id="stock"
+									type="number"
+									min="0"
+									placeholder="0"
+									className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-600
+									           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10"
+									disabled={isLoading}
+									{...register("stock", {
+										valueAsNumber: true,
+									})}
+								/>
+								{(errors as any).stock && (
+									<p className="text-red-400 text-xs">
+										{(errors as any).stock.message}
+									</p>
+								)}
+							</div>
+						)}
+					</div>
 
 					{/* Min Stock Threshold */}
 					<div className="space-y-1.5">
 						<Label
 							htmlFor="minStockThreshold"
-							className="text-zinc-300"
+							className="text-zinc-300 text-sm font-medium"
 						>
 							Min Stock Threshold
 						</Label>
@@ -259,7 +287,8 @@ export function AddEditProductDialog({
 							type="number"
 							min="1"
 							placeholder="1"
-							className="bg-[#1C1F2A] border-zinc-700/60"
+							className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-600
+							           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10"
 							disabled={isLoading}
 							{...register("minStockThreshold", {
 								valueAsNumber: true,
@@ -272,7 +301,7 @@ export function AddEditProductDialog({
 						)}
 					</div>
 
-					{/* Status Preview */}
+					{/* Status Preview (add only) */}
 					{!isEdit && (
 						<div className="p-3 rounded-lg bg-white/5 border border-white/10">
 							<p className="text-xs text-zinc-400">
@@ -284,19 +313,21 @@ export function AddEditProductDialog({
 						</div>
 					)}
 
-					<div className="flex justify-end gap-2 pt-4">
+					{/* Actions */}
+					<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
 						<Button
 							type="button"
-							variant="outline"
+							variant="ghost"
 							onClick={() => onOpenChange(false)}
 							disabled={isLoading}
+							className="w-full sm:w-auto text-zinc-400 hover:text-white hover:bg-white/10"
 						>
 							Cancel
 						</Button>
 						<Button
 							type="submit"
-							className="bg-indigo-600 hover:bg-indigo-500"
 							disabled={isLoading}
+							className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white"
 						>
 							{isLoading ? (
 								<>
@@ -316,6 +347,7 @@ export function AddEditProductDialog({
 	);
 }
 
+// ─── Delete Dialog ────────────────────────────────────────────────────────────
 export function DeleteProductDialog({
 	open,
 	onOpenChange,
@@ -325,27 +357,45 @@ export function DeleteProductDialog({
 }: DeleteProductDialogProps) {
 	return (
 		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent>
+			<AlertDialogContent
+				className="
+					w-[calc(100%-2rem)] sm:max-w-md
+					bg-[#13151C] border border-white/10 text-white
+					rounded-2xl p-4 sm:p-6
+				"
+			>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Delete Product?</AlertDialogTitle>
-					<AlertDialogDescription>
+					<div className="flex items-center gap-3 mb-1">
+						<div className="p-2 rounded-lg bg-red-500/20 border border-red-500/30">
+							<Trash2 className="w-4 h-4 text-red-400" />
+						</div>
+						<AlertDialogTitle className="text-white text-lg font-semibold">
+							Delete Product?
+						</AlertDialogTitle>
+					</div>
+					<AlertDialogDescription className="text-zinc-400 text-sm pl-11">
 						Are you sure you want to delete{" "}
-						<strong>{productName}</strong>? This action cannot be
-						undone.
+						<span className="text-white font-medium">
+							{productName}
+						</span>
+						? This action cannot be undone.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
-				<div className="flex justify-end gap-2">
-					<AlertDialogCancel disabled={isLoading}>
+
+				<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
+					<AlertDialogCancel
+						disabled={isLoading}
+						className="w-full sm:w-auto bg-transparent border-zinc-700 text-zinc-300
+						           hover:bg-white/10 hover:text-white"
+					>
 						Cancel
 					</AlertDialogCancel>
 					<AlertDialogAction
 						onClick={onConfirm}
 						disabled={isLoading}
-						className={
-							isLoading ? "opacity-50 cursor-not-allowed" : ""
-						}
+						className="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white border-0"
 					>
-						{isLoading ? "Deleting..." : "Delete"}
+						{isLoading ? "Deleting..." : "Delete Product"}
 					</AlertDialogAction>
 				</div>
 			</AlertDialogContent>
@@ -353,6 +403,7 @@ export function DeleteProductDialog({
 	);
 }
 
+// ─── Restock Dialog ───────────────────────────────────────────────────────────
 export function RestockProductDialog({
 	open,
 	onOpenChange,
@@ -372,7 +423,7 @@ export function RestockProductDialog({
 	});
 
 	const quantity = watch("quantity");
-	const newStock = product.stock + quantity;
+	const newStock = product.stock + (quantity || 0);
 
 	const handleFormSubmit = async (data: RestockFormData) => {
 		await onConfirm(data.quantity);
@@ -381,86 +432,106 @@ export function RestockProductDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle>Restock Product</DialogTitle>
-					<DialogDescription>
-						Add quantity to {product.name}
-					</DialogDescription>
+			<DialogContent
+				className="
+					w-[calc(100%-2rem)] sm:max-w-md
+					bg-[#13151C] border border-white/10 text-white
+					rounded-2xl p-4 sm:p-6
+				"
+			>
+				<DialogHeader className="mb-2">
+					<div className="flex items-center gap-3">
+						<div className="p-2 rounded-lg bg-amber-500/20 border border-amber-500/30">
+							<ArrowUp className="w-4 h-4 text-amber-400" />
+						</div>
+						<div>
+							<DialogTitle className="text-white text-lg font-semibold">
+								Restock Product
+							</DialogTitle>
+							<DialogDescription className="text-zinc-400 text-sm mt-0.5">
+								Add stock to{" "}
+								<span className="text-white font-medium">
+									{product.name}
+								</span>
+							</DialogDescription>
+						</div>
+					</div>
 				</DialogHeader>
 
-				<div className="space-y-4">
-					{/* Current Stock Info */}
+				{/* Stock info — side by side on sm+ */}
+				<div className="grid grid-cols-2 gap-3 my-4">
 					<div className="p-3 rounded-lg bg-white/5 border border-white/10">
-						<p className="text-xs text-zinc-400">Current Stock</p>
-						<p className="text-2xl font-bold text-white">
-							{product.stock} units
+						<p className="text-xs text-zinc-400 mb-1">
+							Current Stock
 						</p>
+						<p className="text-2xl font-bold text-white">
+							{product.stock}
+						</p>
+						<p className="text-xs text-zinc-500">units</p>
+					</div>
+					<div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+						<p className="text-xs text-green-400 mb-1">New Stock</p>
+						<p className="text-2xl font-bold text-green-400">
+							{newStock}
+						</p>
+						<p className="text-xs text-green-500/70">units</p>
+					</div>
+				</div>
+
+				<form
+					onSubmit={handleSubmit(handleFormSubmit)}
+					className="space-y-4"
+				>
+					<div className="space-y-1.5">
+						<Label
+							htmlFor="quantity"
+							className="text-zinc-300 text-sm font-medium"
+						>
+							Quantity to Add
+						</Label>
+						<Input
+							id="quantity"
+							type="number"
+							min="1"
+							placeholder="10"
+							className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-600
+							           focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 h-10"
+							disabled={isLoading}
+							{...register("quantity", { valueAsNumber: true })}
+						/>
+						{errors.quantity && (
+							<p className="text-red-400 text-xs">
+								{errors.quantity.message}
+							</p>
+						)}
 					</div>
 
-					<form
-						onSubmit={handleSubmit(handleFormSubmit)}
-						className="space-y-4"
-					>
-						{/* Quantity Input */}
-						<div className="space-y-1.5">
-							<Label htmlFor="quantity" className="text-zinc-300">
-								Add Quantity
-							</Label>
-							<Input
-								id="quantity"
-								type="number"
-								min="1"
-								placeholder="10"
-								className="bg-[#1C1F2A] border-zinc-700/60"
-								disabled={isLoading}
-								{...register("quantity", {
-									valueAsNumber: true,
-								})}
-							/>
-							{errors.quantity && (
-								<p className="text-red-400 text-xs">
-									{errors.quantity.message}
-								</p>
+					<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => onOpenChange(false)}
+							disabled={isLoading}
+							className="w-full sm:w-auto text-zinc-400 hover:text-white hover:bg-white/10"
+						>
+							Cancel
+						</Button>
+						<Button
+							type="submit"
+							disabled={isLoading}
+							className="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white"
+						>
+							{isLoading ? (
+								<>
+									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+									Restocking...
+								</>
+							) : (
+								"Confirm Restock"
 							)}
-						</div>
-
-						{/* New Stock Preview */}
-						<div className="p-3 rounded-lg bg-green-500/20 border border-green-500/30">
-							<p className="text-xs text-green-400">
-								New stock will be
-							</p>
-							<p className="text-2xl font-bold text-green-400">
-								{newStock} units
-							</p>
-						</div>
-
-						<div className="flex justify-end gap-2 pt-4">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => onOpenChange(false)}
-								disabled={isLoading}
-							>
-								Cancel
-							</Button>
-							<Button
-								type="submit"
-								className="bg-amber-600 hover:bg-amber-700"
-								disabled={isLoading}
-							>
-								{isLoading ? (
-									<>
-										<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-										Restocking...
-									</>
-								) : (
-									"Confirm Restock"
-								)}
-							</Button>
-						</div>
-					</form>
-				</div>
+						</Button>
+					</div>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);

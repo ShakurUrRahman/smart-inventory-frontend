@@ -115,7 +115,7 @@ export default function CategoriesPage() {
 						className="bg-indigo-600 hover:bg-indigo-500 gap-2"
 					>
 						<Plus className="w-4 h-4" />
-						Add Category
+						<span className="hidden sm:inline">Add Category</span>
 					</Button>
 				}
 			/>
@@ -148,7 +148,7 @@ export default function CategoriesPage() {
 
 			{/* Categories Grid */}
 			{!isEmpty && (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 					<AnimatePresence mode="popLayout">
 						{categories.map((category) => (
 							<motion.div
@@ -159,7 +159,7 @@ export default function CategoriesPage() {
 								exit={{ opacity: 0, scale: 0.9 }}
 								transition={{ duration: 0.2 }}
 							>
-								<div className="group relative bg-white/5 border border-white/10 rounded-xl p-5 backdrop-blur hover:border-white/20 transition-all duration-200 overflow-hidden">
+								<div className="group relative bg-white/5 border border-white/10 rounded-xl p-4 sm:p-5 backdrop-blur hover:border-white/20 transition-all duration-200 overflow-hidden">
 									{/* Hover gradient */}
 									<div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-indigo-500/0 group-hover:from-indigo-500/5 group-hover:to-indigo-500/5 transition-all duration-300" />
 
@@ -177,9 +177,8 @@ export default function CategoriesPage() {
 												</div>
 											</div>
 
-											{/* Action buttons — visible on hover */}
-											<div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-												{/* Edit button */}
+											{/* Action buttons — always visible on mobile, hover on desktop */}
+											<div className="flex items-center gap-1 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
 												<button
 													onClick={() =>
 														handleEditClick(
@@ -194,8 +193,6 @@ export default function CategoriesPage() {
 												>
 													<Pencil className="w-4 h-4" />
 												</button>
-
-												{/* Delete button */}
 												<button
 													onClick={() =>
 														handleDeleteClick(

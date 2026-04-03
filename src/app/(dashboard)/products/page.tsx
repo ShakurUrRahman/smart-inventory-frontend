@@ -185,13 +185,14 @@ export default function ProductsPage() {
 						className="bg-indigo-600 hover:bg-indigo-500 gap-2"
 					>
 						<Plus className="w-4 h-4" />
-						Add Product
+						<span className="hidden sm:inline">Add Product</span>
 					</Button>
 				}
 			/>
 
 			{/* Filter Bar */}
-			<div className="bg-[#13161F] border border-white/10 rounded-xl p-4 mb-6 space-y-4">
+			{/* Filter Bar */}
+			<div className="bg-[#13161F] border border-white/10 rounded-xl p-4 mb-6 space-y-3">
 				{/* Search */}
 				<div className="relative">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
@@ -204,8 +205,7 @@ export default function ProductsPage() {
 				</div>
 
 				{/* Category & Status Filters */}
-				<div className="flex gap-4 flex-wrap">
-					{/* Category Dropdown */}
+				<div className="flex flex-wrap gap-2">
 					<select
 						value={categoryFilter}
 						onChange={(e) => {
@@ -213,7 +213,7 @@ export default function ProductsPage() {
 							setPage(1);
 							updateUrl(search, e.target.value, statusFilter, 1);
 						}}
-						className="px-3 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white text-sm"
+						className="flex-1 min-w-[130px] px-3 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white text-sm"
 					>
 						<option value="">All Categories</option>
 						{categories.map((cat) => (
@@ -223,8 +223,7 @@ export default function ProductsPage() {
 						))}
 					</select>
 
-					{/* Status Filter */}
-					<div className="flex gap-2">
+					<div className="flex gap-2 flex-wrap">
 						{["", "Active", "Out of Stock"].map((status) => (
 							<button
 								key={status}
@@ -238,13 +237,13 @@ export default function ProductsPage() {
 										1,
 									);
 								}}
-								className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+								className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
 									statusFilter === status
 										? "bg-indigo-600 text-white"
 										: "bg-[#1C1F2A] border border-zinc-700/60 text-zinc-300 hover:bg-white/10"
 								}`}
 							>
-								{status || "All Status"}
+								{status || "All"}
 							</button>
 						))}
 					</div>
@@ -293,32 +292,32 @@ export default function ProductsPage() {
 			{/* Products Table */}
 			{(!isEmpty || isLoading) && (
 				<div className="bg-[#13161F] border border-white/10 rounded-xl overflow-hidden">
-					<div className="overflow-x-auto">
-						<table className="w-full text-sm">
+					<div className="hidden sm:block overflow-x-auto">
+						<table className="w-full text-sm min-w-[640px]">
 							<thead>
 								<tr className="border-b border-white/10 bg-black/20">
-									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
+									<th className="px-3 py-3 text-left font-semibold text-zinc-300 w-10">
 										#
 									</th>
-									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
+									<th className="px-3 py-3 text-left font-semibold text-zinc-300">
 										Product Name
 									</th>
-									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
+									<th className="px-3 py-3 text-left font-semibold text-zinc-300 hidden sm:table-cell">
 										Category
 									</th>
-									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
+									<th className="px-3 py-3 text-left font-semibold text-zinc-300">
 										Price
 									</th>
-									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
+									<th className="px-3 py-3 text-left font-semibold text-zinc-300">
 										Stock
 									</th>
-									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
+									<th className="px-3 py-3 text-left font-semibold text-zinc-300 hidden md:table-cell">
 										Threshold
 									</th>
-									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
+									<th className="px-3 py-3 text-left font-semibold text-zinc-300 hidden sm:table-cell">
 										Status
 									</th>
-									<th className="px-4 py-3 text-left font-semibold text-zinc-300">
+									<th className="px-3 py-3 text-left font-semibold text-zinc-300">
 										Actions
 									</th>
 								</tr>
@@ -330,31 +329,16 @@ export default function ProductsPage() {
 												key={i}
 												className="border-b border-white/5"
 											>
-												<td className="px-4 py-3">
-													<div className="h-4 w-6 bg-white/10 rounded animate-pulse" />
-												</td>
-												<td className="px-4 py-3">
-													<div className="h-4 w-40 bg-white/10 rounded animate-pulse mb-1.5" />
-													<div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
-												</td>
-												<td className="px-4 py-3">
-													<div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
-												</td>
-												<td className="px-4 py-3">
-													<div className="h-4 w-16 bg-white/10 rounded animate-pulse" />
-												</td>
-												<td className="px-4 py-3">
-													<div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
-												</td>
-												<td className="px-4 py-3">
-													<div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
-												</td>
-												<td className="px-4 py-3">
-													<div className="h-6 w-20 bg-white/10 rounded-full animate-pulse" />
-												</td>
-												<td className="px-4 py-3">
-													<div className="h-8 w-20 bg-white/10 rounded animate-pulse" />
-												</td>
+												{Array.from({ length: 8 }).map(
+													(_, j) => (
+														<td
+															key={j}
+															className="px-3 py-3"
+														>
+															<div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
+														</td>
+													),
+												)}
 											</tr>
 										))
 									: products.map((product, idx) => {
@@ -370,66 +354,46 @@ export default function ProductsPage() {
 													key={product._id}
 													className="border-b border-white/5 hover:bg-white/5"
 												>
-													<td className="px-4 py-3 text-zinc-400">
+													<td className="px-3 py-3 text-zinc-400 text-xs">
 														{(page - 1) * LIMIT +
 															idx +
 															1}
 													</td>
-													<td className="px-4 py-3 text-white font-medium">
+													<td className="px-3 py-3 text-white font-medium">
 														{product.name}
 													</td>
-													<td className="px-4 py-3 text-zinc-400">
+													<td className="px-3 py-3 text-zinc-400 hidden sm:table-cell">
 														{typeof product.category ===
 														"string"
 															? product.category
 															: product.category
 																	?.name}
 													</td>
-													<td className="px-4 py-3 text-white">
+													<td className="px-3 py-3 text-white">
 														$
 														{product.price.toFixed(
 															2,
 														)}
 													</td>
 													<td
-														className={`px-4 py-3 font-medium flex items-center gap-2 ${
-															isOutOfStock
-																? "text-red-400"
-																: isLowStock
-																	? "text-amber-400"
-																	: "text-green-400"
-														}`}
+														className={`px-3 py-3 font-medium ${isOutOfStock ? "text-red-400" : isLowStock ? "text-amber-400" : "text-green-400"}`}
 													>
-														{isLowStock &&
-															!isOutOfStock && (
-																<AlertTriangle className="w-4 h-4" />
-															)}
 														{product.stock}
-														{isOutOfStock && (
-															<span className="ml-2 px-2 py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">
-																Out
-															</span>
-														)}
 													</td>
-													<td className="px-4 py-3 text-zinc-400">
+													<td className="px-3 py-3 text-zinc-400 hidden md:table-cell">
 														{
 															product.minStockThreshold
 														}
 													</td>
-													<td className="px-4 py-3">
+													<td className="px-3 py-3 hidden sm:table-cell">
 														<span
-															className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-																product.status ===
-																"Active"
-																	? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-																	: "bg-red-500/20 text-red-400 border-red-500/30"
-															}`}
+															className={`px-2 py-1 rounded-full text-xs font-medium border ${product.status === "Active" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}
 														>
 															{product.status}
 														</span>
 													</td>
-													<td className="px-4 py-3">
-														<div className="flex items-center gap-2">
+													<td className="px-3 py-3">
+														<div className="flex items-center gap-1.5">
 															<button
 																onClick={() =>
 																	handleEditClick(
@@ -474,21 +438,115 @@ export default function ProductsPage() {
 						</table>
 					</div>
 
+					{/* Mobile Cards for small screens */}
+					<div className="lg:hidden space-y-4 p-4">
+						{isLoading
+							? Array.from({ length: 4 }).map((_, i) => (
+									<div
+										key={i}
+										className="bg-[#1b1e28] p-4 rounded-xl animate-pulse space-y-2"
+									>
+										<div className="h-4 w-32 bg-white/10 rounded" />
+										<div className="h-4 w-24 bg-white/10 rounded" />
+										<div className="h-4 w-14 bg-white/10 rounded" />
+									</div>
+								))
+							: products.map((product, idx) => {
+									const isLowStock =
+										product.stock > 0 &&
+										product.stock <=
+											product.minStockThreshold;
+									const isOutOfStock = product.stock === 0;
+
+									return (
+										<div
+											key={product._id}
+											className="bg-[#1b1e28] p-4 rounded-xl space-y-2"
+										>
+											<div className="flex justify-between items-start">
+												<p className="text-white font-semibold">
+													{product.name}
+												</p>
+												<span
+													className={`px-2 py-1 rounded-full text-xs font-medium border ${product.status === "Active" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}
+												>
+													{product.status}
+												</span>
+											</div>
+											<p className="text-zinc-400 text-xs">
+												Category:{" "}
+												{typeof product.category ===
+												"string"
+													? product.category
+													: product.category?.name}
+											</p>
+											<p className="text-white text-sm">
+												Price: $
+												{product.price.toFixed(2)}
+											</p>
+											<p
+												className={`text-sm font-medium ${isOutOfStock ? "text-red-400" : isLowStock ? "text-amber-400" : "text-green-400"}`}
+											>
+												Stock: {product.stock}{" "}
+												{isOutOfStock && "(Out)"}{" "}
+												{isLowStock &&
+													!isOutOfStock &&
+													"(Low)"}
+											</p>
+											<div className="flex gap-2 mt-2">
+												<button
+													onClick={() =>
+														handleEditClick(product)
+													}
+													className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition"
+												>
+													<Pencil className="w-4 h-4" />
+												</button>
+												{isLowStock && (
+													<button
+														onClick={() =>
+															handleRestockClick(
+																product,
+															)
+														}
+														className="p-1.5 rounded hover:bg-amber-500/20 text-amber-400 transition"
+													>
+														<ArrowUp className="w-4 h-4" />
+													</button>
+												)}
+												<button
+													onClick={() =>
+														handleDeleteClick(
+															product,
+														)
+													}
+													className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
+												>
+													<Trash2 className="w-4 h-4" />
+												</button>
+											</div>
+										</div>
+									);
+								})}
+					</div>
+
 					{/* Pagination */}
 					{!isLoading && (
-						<div className="flex items-center justify-between px-4 py-4 border-t border-white/10">
-							<div className="text-sm text-zinc-400">
+						<div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 border-t border-white/10 gap-4">
+							{/* Status Text - Centered on mobile, left-aligned on desktop */}
+							<div className="text-xs sm:text-sm text-zinc-400 whitespace-nowrap order-2 sm:order-1">
 								Showing {(page - 1) * LIMIT + 1}–
-								{Math.min(page * LIMIT, total)} of {total}{" "}
-								products
+								{Math.min(page * LIMIT, total)} of {total}
 							</div>
-							<div className="flex gap-2">
+
+							{/* Buttons Container */}
+							<div className="flex items-center gap-1 sm:gap-1.5 order-1 sm:order-2">
 								<button
 									onClick={() =>
 										setPage(Math.max(1, page - 1))
 									}
 									disabled={page === 1}
-									className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+									className="p-2 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 								>
 									<ChevronLeft className="w-4 h-4 text-zinc-400" />
 								</button>
@@ -496,15 +554,58 @@ export default function ProductsPage() {
 								{Array.from({ length: totalPages }).map(
 									(_, i) => {
 										const pageNum = i + 1;
+
+										// Configuration: Show 1 sibling on mobile, 2 on desktop
+										// Mobile (sm): [1] ... [4] [5] [6] ... [20]
+										// Desktop: [1] ... [3] [4] [5] [6] [7] ... [20]
+										const isFirstPage = pageNum === 1;
+										const isLastPage =
+											pageNum === totalPages;
+
+										// Use a small trick: hidden by default on mobile unless it's a "neighbor"
+										const isNeighbor =
+											Math.abs(pageNum - page) <= 1;
+										const isDesktopNeighbor =
+											Math.abs(pageNum - page) <= 2;
+
+										// Logic to decide if we hide the button
+										if (
+											!isFirstPage &&
+											!isLastPage &&
+											!isNeighbor
+										) {
+											// Add a hidden-on-mobile class for the extra desktop neighbors
+											const desktopOnlyClass =
+												isDesktopNeighbor
+													? "hidden md:inline-flex"
+													: "hidden";
+
+											// Show ellipsis only at specific break points
+											if (
+												pageNum === 2 ||
+												pageNum === totalPages - 1
+											) {
+												return (
+													<span
+														key={`sep-${pageNum}`}
+														className={`text-zinc-600 px-1 ${desktopOnlyClass === "hidden" ? "hidden sm:inline" : ""}`}
+													>
+														...
+													</span>
+												);
+											}
+											return null;
+										}
+
 										return (
 											<button
 												key={pageNum}
 												onClick={() => setPage(pageNum)}
-												className={`px-3 py-1 rounded text-sm ${
+												className={`min-w-[32px] h-8 flex items-center justify-center rounded text-xs sm:text-sm transition-all ${
 													page === pageNum
-														? "bg-indigo-600 text-white"
+														? "bg-indigo-600 text-white font-medium"
 														: "hover:bg-white/10 text-zinc-400"
-												}`}
+												} ${!isFirstPage && !isLastPage && !isNeighbor ? "hidden md:flex" : "flex"}`}
 											>
 												{pageNum}
 											</button>
@@ -517,7 +618,7 @@ export default function ProductsPage() {
 										setPage(Math.min(totalPages, page + 1))
 									}
 									disabled={page === totalPages}
-									className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+									className="p-2 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 								>
 									<ChevronRight className="w-4 h-4 text-zinc-400" />
 								</button>

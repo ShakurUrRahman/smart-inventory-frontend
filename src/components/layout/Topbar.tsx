@@ -105,7 +105,7 @@ export function Topbar({ title, onMenuClick }: TopbarProps) {
 
 					{/* Notification Dropdown */}
 					{notificationOpen && (
-						<div className="absolute right-0 top-full mt-2 w-80 bg-[#1a1d28] border border-white/10 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden flex flex-col">
+						<div className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-16 sm:top-full sm:mt-2 w-auto sm:w-80 bg-[#1a1d28] border border-white/10 rounded-lg shadow-lg z-50 max-h-[80vh] sm:max-h-96 overflow-hidden flex flex-col">
 							{/* Header */}
 							<div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
 								<h3 className="text-sm font-semibold text-white">

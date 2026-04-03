@@ -1,7 +1,5 @@
 "use client";
 
-// components/categories/UpdateCategoryDialog.tsx
-
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,7 +50,6 @@ export function UpdateCategoryDialog({
 		resolver: zodResolver(updateCategorySchema),
 	});
 
-	// Pre-fill form when category changes
 	useEffect(() => {
 		if (category) {
 			reset({ name: category.name });
@@ -65,13 +62,13 @@ export function UpdateCategoryDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="bg-[#13151C] border border-white/10 text-white sm:max-w-md">
+			<DialogContent className="bg-[#13151C] border border-white/10 text-white w-[calc(100vw-2rem)] sm:max-w-md mx-auto rounded-xl">
 				<DialogHeader>
 					<div className="flex items-center gap-3 mb-1">
-						<div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+						<div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex-shrink-0">
 							<Pencil className="w-4 h-4 text-indigo-400" />
 						</div>
-						<DialogTitle className="text-white text-lg font-semibold">
+						<DialogTitle className="text-white text-base sm:text-lg font-semibold">
 							Rename Category
 						</DialogTitle>
 					</div>
@@ -110,20 +107,20 @@ export function UpdateCategoryDialog({
 						)}
 					</div>
 
-					<DialogFooter className="gap-2">
+					<DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2">
 						<Button
 							type="button"
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
 							disabled={isLoading}
-							className="text-zinc-400 hover:text-white hover:bg-white/10"
+							className="w-full sm:w-auto text-zinc-400 hover:text-white hover:bg-white/10"
 						>
 							Cancel
 						</Button>
 						<Button
 							type="submit"
 							disabled={isLoading}
-							className="bg-indigo-600 hover:bg-indigo-500 text-white"
+							className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white"
 						>
 							{isLoading ? (
 								<>

@@ -14,6 +14,7 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	LogOut,
+	X,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
@@ -237,41 +238,116 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 						: "opacity-0 pointer-events-none",
 				)}
 			>
+				{/* Backdrop */}
 				<div
 					className={cn(
-						"absolute inset-0 bg-black/50 transition-opacity duration-300",
+						"absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300",
 						isOpen ? "opacity-100" : "opacity-0",
 					)}
 					onClick={onClose}
 				/>
 
+				{/* Sidebar */}
 				<aside
 					onClick={(e) => e.stopPropagation()}
 					className={cn(
-						"absolute left-0 top-0 h-full w-[240px] bg-[#13161F] border-r border-white/10 transform transition-transform duration-300 ease-in-out",
+						"absolute left-0 top-0 h-full w-[270px] bg-[#0e1117] border-r border-white/10 transform transition-transform duration-300 ease-in-out flex flex-col",
 						isOpen ? "translate-x-0" : "-translate-x-full",
 					)}
 				>
 					{/* Header */}
-					<div className="flex items-center justify-between p-4 border-b border-white/10">
-						<h1 className="text-white font-bold">InventoryOS</h1>
-						<button onClick={onClose}>✕</button>
+					<div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+						<div className="flex items-center gap-2.5">
+							<div className="w-8 h-8 bg-indigo-500/20 border border-indigo-500/40 rounded-lg flex items-center justify-center">
+								<span className="text-indigo-400 text-sm font-bold">
+									I
+								</span>
+							</div>
+							<div>
+								<h1 className="text-white font-bold text-sm leading-none">
+									InventoryOS
+								</h1>
+								<p className="text-zinc-500 text-xs mt-0.5">
+									Smart Inventory
+								</p>
+							</div>
+						</div>
+						<button
+							onClick={onClose}
+							className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+						>
+							<X className="w-4 h-4" />
+						</button>
 					</div>
 
 					{/* Nav */}
-					<nav className="p-2 space-y-1">
-						{navItems.map((item) => (
-							<Link key={item.href} href={item.href}>
-								<span
-									onClick={onClose}
-									className="flex items-center gap-3 px-3 py-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg"
-								>
-									{item.icon}
-									{item.label}
-								</span>
-							</Link>
-						))}
+					<nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+						{navItems.map((item) => {
+							const isActive = pathname === item.href;
+							return (
+								<Link key={item.href} href={item.href}>
+									<span
+										onClick={onClose}
+										className={cn(
+											"flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+											isActive
+												? "bg-indigo-500/15 text-indigo-400 border border-indigo-500/20"
+												: "text-zinc-400 hover:text-white hover:bg-white/5",
+										)}
+									>
+										<span
+											className={cn(
+												"w-4 h-4 flex-shrink-0",
+												isActive
+													? "text-indigo-400"
+													: "text-zinc-500",
+											)}
+										>
+											{item.icon}
+										</span>
+										{item.label}
+										{item.badge && item.badge > 0 && (
+											<span className="ml-auto bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-1.5 py-0.5 rounded-full">
+												{item.badge}
+											</span>
+										)}
+									</span>
+								</Link>
+							);
+						})}
 					</nav>
+
+					{/* Footer */}
+					{/* Footer */}
+					<div className="px-4 py-4 border-t border-white/10 space-y-2">
+						<div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/5">
+							<div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center flex-shrink-0">
+								<span className="text-xs font-bold text-indigo-400">
+									{user?.name?.charAt(0).toUpperCase()}
+								</span>
+							</div>
+							<div className="flex-1 min-w-0">
+								<p className="text-sm font-medium text-white truncate">
+									{user?.name}
+								</p>
+								<p className="text-xs text-zinc-400 capitalize">
+									{user?.role}
+								</p>
+							</div>
+						</div>
+
+						{/* Logout Button */}
+						<button
+							onClick={() => {
+								onClose();
+								handleLogout();
+							}}
+							className="w-full flex justify-center items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10 border border-indigo-500/40 hover:border-red-500/20 transition-all duration-150 text-sm font-medium "
+						>
+							<LogOut className="w-4 h-4 flex-shrink-0" />
+							Logout
+						</button>
+					</div>
 				</aside>
 			</div>
 		</>

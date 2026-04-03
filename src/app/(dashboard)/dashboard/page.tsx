@@ -142,10 +142,11 @@ export default function DashboardPage() {
 
 	const statCards = [
 		{
-			icon: ShoppingBag,
-			value: stats?.totalOrdersToday || 0,
-			label: "Orders Today",
-			trend: "+3 from yesterday",
+			icon: Package,
+			value: stats?.totalProducts || 0,
+			label: "Total Products",
+			subtext: `${stats?.totalCategories || 0} categories`,
+			subColor: "text-zinc-400",
 			color: "indigo",
 		},
 		{
@@ -168,9 +169,10 @@ export default function DashboardPage() {
 		},
 		{
 			icon: DollarSign,
-			value: `$${(stats?.revenueToday || 0).toFixed(2)}`,
-			label: "Revenue Today",
-			subtext: `${stats?.deliveredOrders || 0} orders delivered`,
+			value: `$${(stats?.totalRevenue || 0).toFixed(0)}`,
+			label: "Total Revenue",
+			subtext: `Generated from ${stats?.totalOrders || 0} orders`,
+
 			subColor: "text-green-400",
 			color: "green",
 		},
@@ -346,8 +348,8 @@ export default function DashboardPage() {
 								data={statusBreakdown}
 								cx="50%"
 								cy="50%"
-								innerRadius={60}
-								outerRadius={100}
+								innerRadius={50}
+								outerRadius={80}
 								paddingAngle={2}
 								dataKey="count"
 								nameKey="status"
@@ -362,13 +364,27 @@ export default function DashboardPage() {
 									/>
 								))}
 							</Pie>
-							<Legend
-								layout="vertical"
-								align="right"
-								verticalAlign="middle"
-								wrapperStyle={{
+							<Tooltip
+								contentStyle={{
+									backgroundColor: "#1a1d28",
+									border: "1px solid rgba(255,255,255,0.1)",
+									borderRadius: "8px",
 									color: "white",
 									fontSize: "12px",
+								}}
+								formatter={(value: any, name: any) => [
+									value,
+									name,
+								]}
+							/>
+							<Legend
+								layout="horizontal"
+								align="center"
+								verticalAlign="bottom"
+								wrapperStyle={{
+									color: "white",
+									fontSize: "11px",
+									paddingTop: "16px",
 								}}
 							/>
 						</PieChart>

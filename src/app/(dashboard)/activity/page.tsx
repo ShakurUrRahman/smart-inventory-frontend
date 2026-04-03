@@ -118,7 +118,7 @@ function ActivitySkeleton() {
 					</div>
 
 					{/* Card skeleton */}
-					<div className="ml-20 bg-[#13161F] border border-white/10 rounded-xl p-5">
+					<div className="lg:ml-20 ml-10 bg-[#13161F] border border-white/10 rounded-xl p-5">
 						<div className="flex items-start justify-between gap-4 mb-3">
 							<div className="flex-1 space-y-2">
 								{/* Time */}
@@ -193,7 +193,10 @@ export default function ActivityPage() {
 			<PageHeader title="Activity Log" subtitle="Full system history" />
 
 			{/* Entity Type Filter Tabs */}
-			<div className="flex gap-3 mb-8 border-b border-white/10 pb-4 flex-wrap">
+			<div
+				className="flex gap-2 sm:gap-3 mb-6 border-b border-white/10 pb-2
+	overflow-x-auto whitespace-nowrap hide-scrollbar"
+			>
 				{ENTITY_TYPES.map((type) => (
 					<button
 						key={type}
@@ -202,7 +205,7 @@ export default function ActivityPage() {
 							setPage(1);
 							updateUrl(type, 1);
 						}}
-						className={`px-4 py-2 rounded-t-lg font-medium transition-colors capitalize ${
+						className={`px-4 py-2 rounded-t-lg font-medium transition-colors capitalize flex-shrink-0  sm:px-4  text-sm sm:text-base  ${
 							entityFilter === type
 								? "text-indigo-400 border-b-2 border-indigo-400"
 								: "text-zinc-400 hover:text-zinc-300"
@@ -233,7 +236,7 @@ export default function ActivityPage() {
 
 			{/* Timeline */}
 			{!isLoading && !isEmpty && (
-				<div className="max-w-3xl mx-auto">
+				<div className="max-w-3xl mx-auto px-2 sm:px-0">
 					<div className="space-y-6">
 						{logs.map((log, idx) => {
 							const colors =
@@ -259,16 +262,15 @@ export default function ActivityPage() {
 											>
 												<Icon className="w-3 h-3 text-white" />
 											</div>
-											{!isLast && (
-												<div
-													className={`w-1 h-24 ${colors.dot} opacity-30 mt-2`}
-												/>
-											)}
+
+											<div
+												className={`w-1 h-24 ${colors.dot} opacity-30 mt-2`}
+											/>
 										</div>
 									</div>
 
 									{/* Content */}
-									<div className="ml-20 bg-[#13161F] border border-white/10 rounded-xl p-5 backdrop-blur">
+									<div className="lg:ml-20 ml-10 bg-[#13161F] border border-white/10 rounded-xl p-5 backdrop-blur">
 										<div className="flex items-start justify-between gap-4 mb-3">
 											<div>
 												<p className="text-sm text-zinc-400">
@@ -300,46 +302,89 @@ export default function ActivityPage() {
 					</div>
 
 					{/* Pagination */}
-					<div className="flex items-center justify-between px-4 py-6 mt-8 border-t border-white/10">
-						<div className="text-sm text-zinc-400">
-							Showing {(page - 1) * LIMIT + 1}–
-							{Math.min(page * LIMIT, total)} of {total} entries
+					{!isLoading && (
+						<div className="flex flex-col sm:flex-row gap-4 items-center justify-between px-4 py-6">
+							{/* Status Text */}
+							<div className="text-sm text-zinc-400 order-2 sm:order-1">
+								Showing {(page - 1) * LIMIT + 1}–
+								{Math.min(page * LIMIT, total)} of {total}{" "}
+								entries
+							</div>
+
+							{/* Navigation Controls */}
+							<div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
+								<button
+									onClick={() =>
+										setPage(Math.max(1, page - 1))
+									}
+									disabled={page === 1}
+									className="p-2 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+								>
+									←
+								</button>
+
+								{/* Logic to filter visible pages */}
+								{Array.from({ length: totalPages }).map(
+									(_, i) => {
+										const pageNum = i + 1;
+
+										// Responsive Logic:
+										// Always show first and last page
+										// On mobile: show current page + 1 neighbor
+										// On desktop: show current page + 2 neighbors
+										const isFirstOrLast =
+											pageNum === 1 ||
+											pageNum === totalPages;
+										const isNearCurrent =
+											Math.abs(pageNum - page) <=
+											(window.innerWidth < 640 ? 1 : 2);
+
+										if (!isFirstOrLast && !isNearCurrent) {
+											// Optional: Render an ellipsis (...) once between gaps
+											if (
+												pageNum === 2 ||
+												pageNum === totalPages - 1
+											) {
+												return (
+													<span
+														key={pageNum}
+														className="px-1 text-zinc-600"
+													>
+														...
+													</span>
+												);
+											}
+											return null;
+										}
+
+										return (
+											<button
+												key={pageNum}
+												onClick={() => setPage(pageNum)}
+												className={`min-w-[32px] h-8 px-2 rounded text-sm transition-all ${
+													page === pageNum
+														? "bg-indigo-600 text-white font-medium"
+														: "hover:bg-white/10 text-zinc-400"
+												}`}
+											>
+												{pageNum}
+											</button>
+										);
+									},
+								)}
+
+								<button
+									onClick={() =>
+										setPage(Math.min(totalPages, page + 1))
+									}
+									disabled={page === totalPages}
+									className="p-2 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+								>
+									→
+								</button>
+							</div>
 						</div>
-						<div className="flex gap-2">
-							<button
-								onClick={() => setPage(Math.max(1, page - 1))}
-								disabled={page === 1}
-								className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-							>
-								←
-							</button>
-							{Array.from({ length: totalPages }).map((_, i) => {
-								const pageNum = i + 1;
-								return (
-									<button
-										key={pageNum}
-										onClick={() => setPage(pageNum)}
-										className={`px-3 py-1 rounded text-sm ${
-											page === pageNum
-												? "bg-indigo-600 text-white"
-												: "hover:bg-white/10 text-zinc-400"
-										}`}
-									>
-										{pageNum}
-									</button>
-								);
-							})}
-							<button
-								onClick={() =>
-									setPage(Math.min(totalPages, page + 1))
-								}
-								disabled={page === totalPages}
-								className="p-2 rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-							>
-								→
-							</button>
-						</div>
-					</div>
+					)}
 				</div>
 			)}
 		</>

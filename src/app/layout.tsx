@@ -24,7 +24,7 @@ export default function RootLayout({
 					content="width=device-width, initial-scale=1"
 				/>
 			</head>
-			<body className="bg-[#0a0d12]">
+			<body className="bg-[#0a0d12]" suppressHydrationWarning>
 				<Providers>{children}</Providers>
 				<Toaster position="top-right" theme="dark" />
 			</body>
