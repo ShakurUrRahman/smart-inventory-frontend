@@ -22,6 +22,7 @@ export interface ProductSummary {
 	_id: string;
 	name: string;
 	stock: number;
+	price: number;
 	minStockThreshold: number;
 	status: string;
 	category: string;
@@ -36,9 +37,9 @@ export interface ActivityEntry {
 	_id: string;
 	action: string;
 	entityType: string;
-	description: string;
+	description?: string;
 	createdAt: string;
-	userId?: { name: string };
+	performedBy?: { name: string };
 }
 
 export const dashboardApi = {

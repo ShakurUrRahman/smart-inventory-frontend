@@ -105,16 +105,37 @@ export default function DashboardPage() {
 	});
 
 	const { data: recentActivity = [] } = useQuery({
-		queryKey: ["activity"],
+		queryKey: ["dashboard-activity"],
 		queryFn: dashboardApi.getRecentActivity,
-		refetchInterval: 30000, // Refresh every 30 seconds
+		staleTime: 30000,
+		gcTime: 60000,
+		refetchInterval: 30000,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
 
 	if (statsLoading) {
 		return (
 			<>
 				<PageHeader title="Dashboard" subtitle="Inventory overview" />
-				<SkeletonGrid count={12} variant="card" />
+				{/* ROW 1: 4 stat cards */}
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+					{[...Array(4)].map((_, idx) => (
+						<SkeletonGrid key={idx} count={1} variant="card" />
+					))}
+				</div>
+				{/* ROW 2: 3 chart cards */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+					<SkeletonGrid count={1} variant="card" />
+					<SkeletonGrid count={1} variant="card" />
+					<SkeletonGrid count={1} variant="card" />
+					<SkeletonGrid count={1} variant="card" />
+				</div>
+				{/* ROW 3: Product summary + Activity */}
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<SkeletonGrid count={1} variant="card" />
+					<SkeletonGrid count={1} variant="card" />
+				</div>
 			</>
 		);
 	}
@@ -223,13 +244,13 @@ export default function DashboardPage() {
 			</div>
 
 			{/* ROW 2: CHARTS */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-				{/* Orders Chart (60%) */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+				{/* Orders Chart */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.4 }}
-					className="lg:col-span-2 bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur"
+					className="bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur"
 				>
 					<h3 className="text-lg font-semibold text-white mb-6">
 						Orders — Last 7 Days
@@ -266,7 +287,50 @@ export default function DashboardPage() {
 					</ResponsiveContainer>
 				</motion.div>
 
-				{/* Status Breakdown Pie (40%) */}
+				{/* Revenue Chart */}
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.45 }}
+					className="bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur"
+				>
+					<h3 className="text-lg font-semibold text-white mb-6">
+						Revenue — Last 7 Days
+					</h3>
+					<ResponsiveContainer width="100%" height={300}>
+						<BarChart data={revenueChart}>
+							<CartesianGrid
+								strokeDasharray="3 3"
+								stroke="rgba(255,255,255,0.05)"
+							/>
+							<XAxis
+								dataKey="date"
+								stroke="rgba(255,255,255,0.4)"
+								style={{ fontSize: "12px" }}
+							/>
+							<YAxis
+								stroke="rgba(255,255,255,0.4)"
+								style={{ fontSize: "12px" }}
+							/>
+							<Tooltip
+								contentStyle={{
+									backgroundColor: "#1C1F2A",
+									border: "1px solid rgba(255,255,255,0.1)",
+									borderRadius: "8px",
+								}}
+								labelStyle={{ color: "white" }}
+								formatter={(value) => `$${value.toFixed(2)}`}
+							/>
+							<Bar
+								dataKey="revenue"
+								fill="#10B981"
+								radius={[8, 8, 0, 0]}
+							/>
+						</BarChart>
+					</ResponsiveContainer>
+				</motion.div>
+
+				{/* Status Breakdown Pie */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
@@ -286,6 +350,7 @@ export default function DashboardPage() {
 								outerRadius={100}
 								paddingAngle={2}
 								dataKey="count"
+								nameKey="status"
 							>
 								{statusBreakdown.map((entry, index) => (
 									<Cell
@@ -309,11 +374,86 @@ export default function DashboardPage() {
 						</PieChart>
 					</ResponsiveContainer>
 				</motion.div>
+
+				{/* Revenue by Category */}
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.55 }}
+					className="bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur"
+				>
+					<h3 className="text-lg font-semibold text-white mb-6">
+						Top Categories by Revenue
+					</h3>
+					<div className="space-y-4">
+						{productSummary.slice(0, 5).length > 0 ? (
+							(() => {
+								// Group products by category and sum revenue
+								const categoryRevenue: Record<string, number> =
+									{};
+								productSummary.forEach((product) => {
+									const revenue =
+										product.stock * product.price;
+									categoryRevenue[product.category] =
+										(categoryRevenue[product.category] ||
+											0) + revenue;
+								});
+
+								// Sort by revenue descending and get top 5
+								const topCategories = Object.entries(
+									categoryRevenue,
+								)
+									.sort(([, a], [, b]) => b - a)
+									.slice(0, 5);
+
+								const maxRevenue = Math.max(
+									...topCategories.map(([, v]) => v),
+									1,
+								);
+
+								return topCategories.map(
+									([category, revenue], idx) => {
+										const percentage =
+											(revenue / maxRevenue) * 100;
+
+										return (
+											<div
+												key={idx}
+												className="space-y-2"
+											>
+												<div className="flex items-center justify-between">
+													<p className="text-sm text-white truncate">
+														{category}
+													</p>
+													<p className="text-xs text-zinc-400">
+														${revenue.toFixed(2)}
+													</p>
+												</div>
+												<div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+													<div
+														className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all"
+														style={{
+															width: `${percentage}%`,
+														}}
+													></div>
+												</div>
+											</div>
+										);
+									},
+								);
+							})()
+						) : (
+							<p className="text-zinc-400 text-sm py-4">
+								No category data
+							</p>
+						)}
+					</div>
+				</motion.div>
 			</div>
 
 			{/* ROW 3: TABLES */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				{/* Product Summary Table (60%) */}
+				{/* Product Summary Table (66%) */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
@@ -385,7 +525,7 @@ export default function DashboardPage() {
 					</div>
 				</motion.div>
 
-				{/* Activity Feed (40%) */}
+				{/* Activity Feed (34%) */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
@@ -404,9 +544,9 @@ export default function DashboardPage() {
 						</Link>
 					</div>
 
-					<div className="space-y-3 max-h-96 overflow-y-auto">
+					<div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
 						{recentActivity.length > 0 ? (
-							recentActivity.map((activity, idx) => {
+							recentActivity.slice(0, 8).map((activity, idx) => {
 								const iconClass =
 									ACTIVITY_COLORS[activity.entityType] ||
 									"bg-gray-500/20 text-gray-400";
