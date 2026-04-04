@@ -32,6 +32,8 @@ export default function RegisterPage() {
 	const router = useRouter();
 	const [serverError, setServerError] = useState<string | null>(null);
 
+	const { user, isHydrated } = useAuthStore();
+
 	const {
 		register,
 		handleSubmit,
