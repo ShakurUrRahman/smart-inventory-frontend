@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -24,7 +24,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
 	const router = useRouter();
-	const { setUser, setToken } = useAuthStore();
+	const { setUser, setToken, user, isHydrated } = useAuthStore();
 	const [serverError, setServerError] = useState<string | null>(null);
 
 	const {
@@ -35,6 +35,16 @@ export default function LoginPage() {
 	} = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
 	});
+
+	useEffect(() => {
+		if (isHydrated && user) {
+			router.replace("/dashboard");
+		}
+	}, [user, isHydrated, router]);
+
+	// Don't render login form until hydration is complete
+	if (!isHydrated) return null;
+	if (user) return null; //
 
 	const onSubmit = async (data: LoginFormData) => {
 		try {
