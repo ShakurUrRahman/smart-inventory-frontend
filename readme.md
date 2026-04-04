@@ -460,8 +460,9 @@ MIT
 
 - Location: Dhaka, Bangladesh
 - Stack: Next.js, React, Node.js, MongoDB
-- Portfolio: [Your Portfolio Link]
+- Portfolio: https://shakur.netlify.app
 
 ---
 
 **Built with ❤️ using Next.js & TypeScript**
+
