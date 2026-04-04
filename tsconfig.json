@@ -29,6 +29,6 @@
 			}
 		]
 	},
-	"include": ["src", "app", ".next/types/**/*.ts", "middleware.ts"],
+	"include": ["src", "app", ".next/types/**/*.ts", "src/middleware.ts"],
 	"exclude": ["dist", "build", "node_modules"]
 }

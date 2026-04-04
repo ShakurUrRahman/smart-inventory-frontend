@@ -19,13 +19,14 @@ import {
 const PRIORITY_COLORS: Record<string, string> = {
 	High: "bg-red-500/20 text-red-400 border-red-500/30",
 	Medium: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-	Low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+	Low: "bg-green-500/20 text-green-400 border-green-500/30", // was blue
 };
 
+// ✅ Match emoji to colors
 const PRIORITY_ICONS: Record<string, string> = {
 	High: "🔴",
 	Medium: "🟡",
-	Low: "🔵",
+	Low: "🟢",
 };
 
 export default function RestockPage() {
@@ -139,7 +140,7 @@ export default function RestockPage() {
 	const getProgressBarColor = (percentage: number) => {
 		if (percentage <= 30) return "bg-red-500";
 		if (percentage <= 60) return "bg-amber-500";
-		return "bg-yellow-500";
+		return "bg-green-500"; // was bg-yellow-500
 	};
 
 	const handleRestockClick = (item: RestockQueueItem) => {
