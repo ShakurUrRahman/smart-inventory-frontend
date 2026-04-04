@@ -50,8 +50,8 @@ export default function RegisterPage() {
 	}, [user, isHydrated, router]);
 
 	// Don't render login form until hydration is complete
-	if (!isHydrated) return null;
-	if (user) return null; //
+	// if (!isHydrated) return null;
+	// if (user) return null; //
 
 	const onSubmit = async (data: RegisterFormData) => {
 		try {
