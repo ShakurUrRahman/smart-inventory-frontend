@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { registerUser } from "@/lib/authApi";
+import { useAuthStore } from "@/store/authStore";
 
 const registerSchema = z
 	.object({
