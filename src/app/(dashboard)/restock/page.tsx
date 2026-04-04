@@ -243,7 +243,7 @@ export default function RestockPage() {
 			{(!isEmpty || isLoading) && (
 				<div className="lg:bg-[#13161F] lg:border lg:border-white/10 rounded-xl overflow-hidden">
 					{/* Mobile View */}
-					<div className="block lg:hidden space-y-3">
+					<div className="block lg:hidden space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
 						{isLoading ? (
 							<SkeletonGrid />
 						) : (

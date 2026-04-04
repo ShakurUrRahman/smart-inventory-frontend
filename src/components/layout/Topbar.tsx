@@ -28,14 +28,14 @@ interface TopbarProps {
 
 export function Topbar({ title, onMenuClick }: TopbarProps) {
 	const { user, clearUser } = useAuthStore();
-	const {
-		notifications,
-		unreadCount,
-		markAsRead,
-		markAllAsRead,
-		removeNotification,
-		setActivities,
-	} = useNotificationStore();
+	const notifications = useNotificationStore((state) => state.notifications);
+	const unreadCount = useNotificationStore((state) => state.unreadCount);
+	const markAsRead = useNotificationStore((state) => state.markAsRead);
+	const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
+	const removeNotification = useNotificationStore(
+		(state) => state.removeNotification,
+	);
+	const setActivities = useNotificationStore((state) => state.setActivities);
 	const router = useRouter();
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [notificationOpen, setNotificationOpen] = useState(false);
@@ -53,8 +53,10 @@ export function Topbar({ title, onMenuClick }: TopbarProps) {
 
 	// Initialize notifications from activities
 	useEffect(() => {
-		setActivities(activities);
-	}, [activities, setActivities]);
+		if (activities && activities.length > 0) {
+			setActivities(activities);
+		}
+	}, [activities]);
 
 	const handleLogout = async () => {
 		try {

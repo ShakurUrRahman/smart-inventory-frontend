@@ -20,7 +20,7 @@ import { SkeletonGrid } from "@/components/shared/Skeleton";
 import { categoriesApi } from "@/lib/categoriesApi";
 import { productsApi, Product } from "@/lib/productsApi";
 import { toast } from "sonner";
-
+import { motion } from "framer-motion";
 import {
 	AddEditProductDialog,
 	DeleteProductDialog,
@@ -175,7 +175,11 @@ export default function ProductsPage() {
 	const isEmpty = products.length === 0 && !isLoading;
 
 	return (
-		<>
+		<motion.div
+			initial={{ opacity: 0, y: 12 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.3, ease: "easeOut" }}
+		>
 			<PageHeader
 				title="Products"
 				subtitle={`${total} total product${total !== 1 ? "s" : ""}`}
@@ -291,8 +295,8 @@ export default function ProductsPage() {
 
 			{/* Products Table */}
 			{(!isEmpty || isLoading) && (
-				<div className="bg-[#13161F] border border-white/10 rounded-xl overflow-hidden">
-					<div className="hidden sm:block overflow-x-auto">
+				<div className="bg-[#13161F] border border-white/10 rounded-xl overflow-hidden ">
+					<div className="hidden lg:block overflow-x-auto ">
 						<table className="w-full text-sm min-w-[640px]">
 							<thead>
 								<tr className="border-b border-white/10 bg-black/20">
@@ -439,7 +443,7 @@ export default function ProductsPage() {
 					</div>
 
 					{/* Mobile Cards for small screens */}
-					<div className="lg:hidden space-y-4 p-4">
+					<div className="block lg:hidden space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
 						{isLoading
 							? Array.from({ length: 4 }).map((_, i) => (
 									<div
@@ -667,6 +671,6 @@ export default function ProductsPage() {
 					/>
 				</>
 			)}
-		</>
+		</motion.div>
 	);
 }

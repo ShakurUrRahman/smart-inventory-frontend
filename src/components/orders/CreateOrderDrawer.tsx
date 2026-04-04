@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Product } from "@/lib/productsApi";
 import { Category } from "@/lib/categoriesApi";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const orderSchema = z.object({
 	customerName: z
@@ -187,10 +188,17 @@ export default function CreateOrderDrawer({
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent className="sm:max-w-xl overflow-y-auto bg-[#0a0d12]">
-				<SheetHeader>
-					<SheetTitle>Create Order</SheetTitle>
-					<SheetDescription>
+			<SheetContent
+				className={cn(
+					"w-full sm:max-w-xl overflow-y-auto bg-[#0a0d12] border-l border-white/10",
+					"transition-transform duration-300 ease-in-out",
+				)}
+			>
+				<SheetHeader className="pb-4 border-b border-white/10">
+					<SheetTitle className="text-white text-lg">
+						Create Order
+					</SheetTitle>
+					<SheetDescription className="text-zinc-400 text-sm">
 						Add products and customer information to create a new
 						order
 					</SheetDescription>
@@ -198,17 +206,20 @@ export default function CreateOrderDrawer({
 
 				<form
 					onSubmit={handleSubmit(handleFormSubmit)}
-					className="space-y-6 mt-6"
+					className="space-y-5 mt-5"
 				>
 					{/* SECTION 1: Customer Name */}
-					<div className="space-y-3 pb-6 border-b border-white/10">
-						<Label htmlFor="customerName" className="text-zinc-300">
+					<div className="space-y-2 pb-5 border-b border-white/10">
+						<Label
+							htmlFor="customerName"
+							className="text-zinc-300 text-sm"
+						>
 							Customer Name
 						</Label>
 						<Input
 							id="customerName"
 							placeholder="e.g., John Smith"
-							className="bg-[#1C1F2A] border-zinc-700/60"
+							className="bg-[#1C1F2A] border-zinc-700/60 text-white"
 							disabled={isLoading}
 							{...register("customerName")}
 						/>
@@ -220,32 +231,31 @@ export default function CreateOrderDrawer({
 					</div>
 
 					{/* SECTION 2: Add Products */}
-					<div className="space-y-3 pb-6 border-b border-white/10">
-						<Label className="text-zinc-300">Add Products</Label>
-
-						<div className="space-y-3">
-							<div className="flex gap-2">
-								<ProductSelect
-									products={products}
-									selectedProducts={selectedProducts}
-									onSelect={handleAddProduct}
-									disabled={isLoading}
-								/>
-							</div>
-
-							{inlineErrors["product-select"] && (
-								<p className="text-red-400 text-xs">
-									{inlineErrors["product-select"]}
-								</p>
-							)}
+					<div className="space-y-2 pb-5 border-b border-white/10">
+						<Label className="text-zinc-300 text-sm">
+							Add Products
+						</Label>
+						<div className="w-full">
+							<ProductSelect
+								products={products}
+								selectedProducts={selectedProducts}
+								onSelect={handleAddProduct}
+								disabled={isLoading}
+							/>
 						</div>
+						{inlineErrors["product-select"] && (
+							<p className="text-red-400 text-xs">
+								{inlineErrors["product-select"]}
+							</p>
+						)}
 					</div>
 
 					{/* SECTION 3: Item List */}
 					{fields.length > 0 && (
-						<div className="space-y-3 pb-6 border-b border-white/10">
-							<Label className="text-zinc-300">Order Items</Label>
-
+						<div className="space-y-2 pb-5 border-b border-white/10">
+							<Label className="text-zinc-300 text-sm">
+								Order Items
+							</Label>
 							<div className="space-y-2">
 								{fields.map((field, index) => {
 									const product = products.find(
@@ -261,15 +271,15 @@ export default function CreateOrderDrawer({
 									return (
 										<div
 											key={field.id}
-											className="space-y-2"
+											className="space-y-1.5"
 										>
-											<div className="flex items-center justify-between bg-white/5 border border-white/10 p-3 rounded">
-												<div>
-													<p className="text-white text-sm">
+											<div className="flex items-center justify-between bg-white/5 border border-white/10 p-3 rounded-lg gap-3">
+												<div className="flex-1 min-w-0">
+													<p className="text-white text-sm font-medium truncate">
 														{product?.name ||
 															"Unknown Product"}
 													</p>
-													<p className="text-zinc-400 text-xs">
+													<p className="text-zinc-400 text-xs mt-0.5">
 														×
 														{items[index]
 															?.quantity ||
@@ -277,9 +287,14 @@ export default function CreateOrderDrawer({
 														@ $
 														{product?.price.toFixed(
 															2,
-														)}
-														= $
-														{itemTotal.toFixed(2)}
+														)}{" "}
+														={" "}
+														<span className="text-white font-medium">
+															$
+															{itemTotal.toFixed(
+																2,
+															)}
+														</span>
 													</p>
 												</div>
 												<button
@@ -287,13 +302,12 @@ export default function CreateOrderDrawer({
 													onClick={() =>
 														handleRemoveItem(index)
 													}
-													className="p-1 hover:bg-red-500/20 text-red-400 rounded transition"
+													className="p-1.5 hover:bg-red-500/20 text-red-400 rounded-lg transition flex-shrink-0"
 													disabled={isLoading}
 												>
 													<Trash2 className="w-4 h-4" />
 												</button>
 											</div>
-
 											{hasStockWarning && (
 												<p className="text-amber-400 text-xs flex items-center gap-1">
 													⚠️ {hasStockWarning}
@@ -308,10 +322,12 @@ export default function CreateOrderDrawer({
 
 					{/* Total */}
 					{fields.length > 0 && (
-						<div className="pb-6 border-b border-white/10">
-							<div className="text-right">
-								<p className="text-zinc-400 text-sm">Total</p>
-								<p className="text-3xl font-bold text-white">
+						<div className="pb-5 border-b border-white/10">
+							<div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+								<p className="text-zinc-400 text-sm">
+									Order Total
+								</p>
+								<p className="text-2xl sm:text-3xl font-bold text-white">
 									${totalPrice.toFixed(2)}
 								</p>
 							</div>
@@ -319,18 +335,19 @@ export default function CreateOrderDrawer({
 					)}
 
 					{/* Submit */}
-					<div className="flex gap-2 justify-end">
+					<div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-1 pb-6">
 						<Button
 							type="button"
 							variant="outline"
 							onClick={() => onOpenChange(false)}
 							disabled={isLoading}
+							className="w-full sm:w-auto border-zinc-700 text-zinc-300 hover:bg-white/5"
 						>
 							Cancel
 						</Button>
 						<Button
 							type="submit"
-							className="bg-indigo-600 hover:bg-indigo-500"
+							className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500"
 							disabled={!canSubmit}
 						>
 							{isLoading ? (
@@ -376,12 +393,12 @@ function ProductSelect({
 	};
 
 	return (
-		<>
+		<div className="flex flex-col sm:flex-row gap-2 w-full">
 			<select
 				value={selectedProductId}
 				onChange={(e) => setSelectedProductId(e.target.value)}
 				disabled={disabled || availableProducts.length === 0}
-				className="flex-1 px-3 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white text-sm"
+				className="flex-1 w-full px-3 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white text-sm focus:border-indigo-500 focus:outline-none"
 			>
 				<option value="">Select a product...</option>
 				{products.map((product) => (
@@ -399,27 +416,29 @@ function ProductSelect({
 				))}
 			</select>
 
-			<input
-				type="number"
-				min="1"
-				value={quantity}
-				onChange={(e) =>
-					setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-				}
-				disabled={disabled}
-				className="w-20 px-2 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white text-sm"
-				placeholder="Qty"
-			/>
+			<div className="flex gap-2">
+				<input
+					type="number"
+					min="1"
+					value={quantity}
+					onChange={(e) =>
+						setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+					}
+					disabled={disabled}
+					className="w-20 px-2 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white text-sm focus:border-indigo-500 focus:outline-none"
+					placeholder="Qty"
+				/>
 
-			<Button
-				type="button"
-				onClick={handleAdd}
-				disabled={disabled || !selectedProductId || quantity < 1}
-				className="bg-indigo-600 hover:bg-indigo-500 gap-1 px-3"
-			>
-				<Plus className="w-4 h-4" />
-				Add
-			</Button>
-		</>
+				<Button
+					type="button"
+					onClick={handleAdd}
+					disabled={disabled || !selectedProductId || quantity < 1}
+					className="bg-indigo-600 hover:bg-indigo-500 gap-1 px-3 flex-shrink-0"
+				>
+					<Plus className="w-4 h-4" />
+					<span className="hidden sm:inline">Add</span>
+				</Button>
+			</div>
+		</div>
 	);
 }

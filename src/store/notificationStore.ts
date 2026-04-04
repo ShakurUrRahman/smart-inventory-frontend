@@ -79,12 +79,11 @@ export const useNotificationStore = create<NotificationStore>()(
 
 			setActivities: (activities: any[]) =>
 				set((state) => {
+					// ← use state parameter directly
 					if (!activities || activities.length === 0) return state;
 
-					const currentState = get();
-					const lastId = currentState.lastActivityId;
+					const lastId = state.lastActivityId; // ← use state instead of get()
 
-					// Get only NEW activities
 					let newActivities = activities;
 					if (lastId) {
 						const lastIndex = activities.findIndex(
@@ -97,7 +96,6 @@ export const useNotificationStore = create<NotificationStore>()(
 
 					const newLastId = activities[0]?._id || null;
 
-					// Convert to notifications — mark as read if in readIds
 					const newNotifications = newActivities
 						.slice(0, 5)
 						.map((activity) => ({
@@ -106,12 +104,13 @@ export const useNotificationStore = create<NotificationStore>()(
 								activity.description || activity.action,
 							entityType: activity.entityType,
 							createdAt: activity.createdAt,
-							isRead: currentState.readIds.includes(activity._id), // ← check readIds
+							isRead: state.readIds.includes(activity._id), // ← use state
 						}));
 
 					const updated = [
 						...newNotifications,
-						...currentState.notifications.filter(
+						...state.notifications.filter(
+							// ← use state
 							(n) =>
 								!newNotifications.find((nn) => nn.id === n.id),
 						),

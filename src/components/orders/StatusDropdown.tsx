@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Order } from "@/lib/ordersApi";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
 	Pending: ["Confirmed", "Cancelled"],
@@ -47,7 +48,11 @@ export function StatusDropdown({ order, onStatusChange }: StatusDropdownProps) {
 	useEffect(() => {
 		if (!isOpen) return;
 		const handle = (e: MouseEvent) => {
-			if (!buttonRef.current?.contains(e.target as Node)) {
+			const portal = document.querySelector("[data-status-dropdown]");
+			if (
+				!buttonRef.current?.contains(e.target as Node) &&
+				!portal?.contains(e.target as Node)
+			) {
 				setIsOpen(false);
 			}
 		};
@@ -75,14 +80,19 @@ export function StatusDropdown({ order, onStatusChange }: StatusDropdownProps) {
 
 			{isOpen &&
 				createPortal(
-					<div
+					<motion.div
+						initial={{ opacity: 0, scale: 0.95, y: -6 }}
+						animate={{ opacity: 1, scale: 1, y: 0 }}
+						exit={{ opacity: 0, scale: 0.95, y: -6 }}
+						transition={{ duration: 0.15, ease: "easeOut" }}
 						style={{ top: position.top, left: position.left }}
 						className="fixed w-40 bg-[#1C1F2A] border border-zinc-700/60 rounded-lg shadow-lg z-[9999]"
 					>
 						{validNextStatuses.map((status) => (
 							<button
 								key={status}
-								onClick={() => {
+								onMouseDown={(e) => {
+									e.stopPropagation();
 									onStatusChange(status);
 									setIsOpen(false);
 								}}
@@ -91,7 +101,7 @@ export function StatusDropdown({ order, onStatusChange }: StatusDropdownProps) {
 								{status}
 							</button>
 						))}
-					</div>,
+					</motion.div>,
 					document.body,
 				)}
 		</>
@@ -121,24 +131,28 @@ export function StatusConfirmDialog({
 
 	return (
 		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent>
+			<AlertDialogContent className="w-[calc(100%-2rem)] sm:max-w-md rounded-xl mx-auto">
 				<AlertDialogHeader>
-					<AlertDialogTitle>Update Order Status?</AlertDialogTitle>
-					<AlertDialogDescription>
-						Mark order <strong>{orderNumber}</strong> as{" "}
-						<strong>{newStatus}</strong>?
+					<AlertDialogTitle className="text-base sm:text-lg">
+						Update Order Status?
+					</AlertDialogTitle>
+					<AlertDialogDescription className="text-sm">
+						Mark order{" "}
+						<strong className="text-white">{orderNumber}</strong> as{" "}
+						<strong className="text-white">{newStatus}</strong>?
 					</AlertDialogDescription>
 				</AlertDialogHeader>
-				<div className="flex justify-end gap-2">
-					<AlertDialogCancel disabled={isLoading}>
+				<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-2">
+					<AlertDialogCancel
+						disabled={isLoading}
+						className="w-full sm:w-auto"
+					>
 						Cancel
 					</AlertDialogCancel>
 					<AlertDialogAction
 						onClick={handleConfirm}
 						disabled={isLoading}
-						className={
-							isLoading ? "opacity-50 cursor-not-allowed" : ""
-						}
+						className={`w-full sm:w-auto ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
 					>
 						{isLoading ? "Updating..." : "Confirm"}
 					</AlertDialogAction>
