@@ -15,14 +15,11 @@ const queryClient = new QueryClient({
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
-	const { rehydrateUser, isHydrated } = useAuthStore();
+	const { rehydrateUser } = useAuthStore();
 
 	useEffect(() => {
-		// Rehydrate user on app load
-		if (!isHydrated) {
-			rehydrateUser();
-		}
-	}, [isHydrated, rehydrateUser]);
+		rehydrateUser();
+	}, []);
 
 	return (
 		<QueryClientProvider client={queryClient}>

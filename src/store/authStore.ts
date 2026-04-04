@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import apiClient from "@/lib/api";
+import Cookies from "js-cookie";
+import { getMe } from "@/lib/authApi"; // ← add this import
 
 export interface User {
 	id: string;
@@ -25,10 +27,9 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>()(
 	persist(
-		(set) => ({
+		(set, get) => ({
 			user: null,
 			token: null,
-
 			isLoading: false,
 			isHydrated: false,
 
@@ -36,9 +37,8 @@ export const useAuthStore = create<AuthStore>()(
 			setToken: (token: string) => set({ token }),
 
 			clearUser: () => {
-				// Clear Zustand state
+				Cookies.remove("token");
 				set({ user: null, token: null, isHydrated: false });
-				// Also clear localStorage manually
 				try {
 					localStorage.removeItem("auth-store");
 				} catch (error) {
@@ -47,27 +47,29 @@ export const useAuthStore = create<AuthStore>()(
 			},
 
 			setIsLoading: (loading: boolean) => set({ isLoading: loading }),
-
 			setIsHydrated: (hydrated: boolean) => set({ isHydrated: hydrated }),
 
 			rehydrateUser: async () => {
 				try {
-					set({ isLoading: true });
-					const response = await apiClient.get("/auth/me");
-
-					if (response.data.success && response.data.user) {
-						set({
-							user: response.data.user,
-							isLoading: false,
-							isHydrated: true,
-						});
+					const data = await getMe();
+					if (data?.user) {
+						const token = Cookies.get("token");
+						if (!token && get().token) {
+							// Use stored token from persist if cookie missing
+							Cookies.set("token", get().token!, {
+								expires: 7,
+								sameSite: "lax",
+								secure: process.env.NODE_ENV === "production",
+							});
+						}
+						set({ user: data.user, isHydrated: true });
 					} else {
-						set({ user: null, isLoading: false, isHydrated: true });
+						Cookies.remove("token");
+						set({ user: null, token: null, isHydrated: true });
 					}
-				} catch (error) {
-					// Silently fail - user is not authenticated
-					console.log("User not authenticated");
-					set({ user: null, isLoading: false, isHydrated: true });
+				} catch {
+					Cookies.remove("token");
+					set({ user: null, token: null, isHydrated: true }); // ← always resolve
 				}
 			},
 		}),

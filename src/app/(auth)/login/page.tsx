@@ -24,7 +24,8 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
 	const router = useRouter();
-	const { setUser, setToken, user, isHydrated } = useAuthStore();
+	const { setUser, setToken, user, isHydrated, setIsHydrated } =
+		useAuthStore();
 	const [serverError, setServerError] = useState<string | null>(null);
 
 	const {
@@ -53,6 +54,10 @@ export default function LoginPage() {
 			setUser(res.user);
 			setToken(res.token);
 			toast.success("Signed in successfully!");
+			setUser(res.user);
+			setToken(res.token);
+			setIsHydrated(true);
+
 			router.push("/dashboard");
 		} catch (err: any) {
 			const errorMsg =

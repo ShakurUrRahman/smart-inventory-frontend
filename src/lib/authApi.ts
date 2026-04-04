@@ -1,4 +1,5 @@
 import apiClient from "./api";
+import Cookies from "js-cookie";
 
 export interface LoginResponse {
 	success: boolean;
@@ -23,25 +24,45 @@ export interface RegisterResponse {
 	};
 }
 
-export const loginUser = async (
-	email: string,
-	password: string,
-): Promise<LoginResponse> => {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+async function handleResponse<T>(res: Response): Promise<T> {
+	const data = await res.json();
+	if (!res.ok) {
+		throw new Error(data.message || "Something went wrong");
+	}
+	return data as T;
+}
+
+export async function loginUser(email: string, password: string) {
+	const res = await fetch(`${API_URL}/auth/login`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		credentials: "include",
+		body: JSON.stringify({ email, password }),
+	});
+	const data = await handleResponse<{
+		success: boolean;
+		token: string;
+		user: any;
+	}>(res);
+
+	Cookies.set("token", data.token, {
+		expires: 7,
+		sameSite: "lax",
+		secure: true,
+	});
+
+	return data;
+}
+
+export const getMe = async () => {
 	try {
-		const response = await apiClient.post<LoginResponse>("/auth/login", {
-			email,
-			password,
-		});
-
-		if (!response.data.success) {
-			throw new Error(response.data.message || "Login failed");
-		}
-
-		return response.data;
-	} catch (error: any) {
-		throw new Error(
-			error.response?.data?.message || error.message || "Login failed",
-		);
+		const response = await apiClient.get("/auth/me");
+		if (!response.data.success) return null;
+		return response.data; // returns { success, user }
+	} catch {
+		return null;
 	}
 };
 
@@ -74,13 +95,13 @@ export const registerUser = async (
 	}
 };
 
-export const logoutUser = async (): Promise<void> => {
-	try {
-		await apiClient.post("/auth/logout");
-	} catch (error: any) {
-		throw new Error(error.response?.data?.message || "Logout failed");
-	}
-};
+export async function logoutUser() {
+	await fetch(`${API_URL}/auth/logout`, {
+		method: "POST",
+		credentials: "include",
+	});
+	Cookies.remove("token");
+}
 
 export const getCurrentUser = async () => {
 	try {
