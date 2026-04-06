@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
+import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
 	title: "InventoryOS — Smart Inventory Management",
@@ -16,7 +20,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" className="dark">
+		<html lang="en" className={cn("dark", "font-sans", inter.variable)}>
 			<head>
 				<meta charSet="utf-8" />
 				<meta

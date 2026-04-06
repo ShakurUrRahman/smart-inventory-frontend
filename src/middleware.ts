@@ -1,21 +1,31 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
 	const token = request.cookies.get("token")?.value;
 	const { pathname } = request.nextUrl;
 
 	const isAuthPage = pathname === "/login" || pathname === "/register";
-	const isDashboardPage = pathname.startsWith("/dashboard");
 
-	if (isDashboardPage && !token) {
-		return NextResponse.redirect(new URL("/login", request.url));
+	// ── Auth pages — redirect logged-in users to dashboard ──────────────────
+	if (isAuthPage) {
+		if (token) {
+			return NextResponse.redirect(new URL("/dashboard", request.url));
+		}
+		return NextResponse.next();
 	}
 
-	if (isAuthPage && token) {
-		return NextResponse.redirect(new URL("/dashboard", request.url));
+	// ── All protected pages — require token ──────────────────────────────────
+	if (!token) {
+		const loginUrl = new URL("/login", request.url);
+		loginUrl.searchParams.set("from", pathname);
+		return NextResponse.redirect(loginUrl);
 	}
 
+	// ── If we have a token, allow the request through ──────────────────────────
+	// Backend verification happens via GET /api/auth/me which uses requireAuth
+	// middleware. The apiClient interceptor handles 401 responses and role-based
+	// access. Frontend components check user.role and redirect as needed.
 	return NextResponse.next();
 }
 

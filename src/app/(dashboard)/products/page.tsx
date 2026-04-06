@@ -12,6 +12,7 @@ import {
 	AlertTriangle,
 	ChevronLeft,
 	ChevronRight,
+	X,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -27,11 +28,20 @@ import {
 	RestockProductDialog,
 } from "@/components/products/ProductModals";
 import { useDebounce } from "@/hooks/useSearch";
+import { useAuthStore } from "@/store/authStore";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 export default function ProductsPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const queryClient = useQueryClient();
+	const { user } = useAuthStore();
 
 	// URL-synced filters
 	const [search, setSearch] = useState(searchParams.get("search") || "");
@@ -195,7 +205,6 @@ export default function ProductsPage() {
 			/>
 
 			{/* Filter Bar */}
-			{/* Filter Bar */}
 			<div className="bg-[#13161F] border border-white/10 rounded-xl p-4 mb-6 space-y-3">
 				{/* Search */}
 				<div className="relative">
@@ -204,28 +213,68 @@ export default function ProductsPage() {
 						placeholder="Search products..."
 						value={search}
 						onChange={(e) => handleSearchChange(e.target.value)}
-						className="pl-10 bg-[#1C1F2A] border-zinc-700/60"
+						className="pl-10 pr-9 bg-[#1C1F2A] border-zinc-700/60 focus:outline-none focus:ring-0
+  data-[highlighted]:bg-white/10
+  data-[highlighted]:text-white
+  data-[highlighted]:outline-none
+  data-[highlighted]:ring-0"
 					/>
+					{search && (
+						<button
+							onClick={() => handleSearchChange("")}
+							className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					)}
 				</div>
 
 				{/* Category & Status Filters */}
 				<div className="flex flex-wrap gap-2">
-					<select
+					<Select
 						value={categoryFilter}
-						onChange={(e) => {
-							setCategoryFilter(e.target.value);
+						onValueChange={(value) => {
+							setCategoryFilter(value);
 							setPage(1);
-							updateUrl(search, e.target.value, statusFilter, 1);
+							updateUrl(search, value, statusFilter, 1);
 						}}
-						className="flex-1 min-w-[130px] px-3 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white text-sm"
 					>
-						<option value="">All Categories</option>
-						{categories.map((cat) => (
-							<option key={cat._id} value={cat._id}>
-								{cat.name}
-							</option>
-						))}
-					</select>
+						<SelectTrigger className="flex-1 border min-w-[130px] bg-[#1C1F2A] border-zinc-700/60 text-white text-sm">
+							<SelectValue placeholder="All Categories" />
+						</SelectTrigger>
+						<SelectContent
+							side="bottom"
+							sideOffset={4}
+							position="popper"
+							avoidCollisions={false}
+							className="bg-[#1C1F2A] border border-zinc-700/60 text-white
+             w-[--radix-select-trigger-width] p-1 ring-0"
+						>
+							<SelectItem
+								className=" focus:outline-none focus:ring-0
+  data-[highlighted]:bg-white/10
+  data-[highlighted]:text-white
+  data-[highlighted]:outline-none
+  data-[highlighted]:ring-0"
+								value="all"
+							>
+								All Categories
+							</SelectItem>
+							{categories.map((cat) => (
+								<SelectItem
+									className=" focus:outline-none focus:ring-0
+  data-[highlighted]:bg-white/10
+  data-[highlighted]:text-white
+  data-[highlighted]:outline-none
+  data-[highlighted]:ring-0"
+									key={cat._id}
+									value={cat._id}
+								>
+									{cat.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 
 					<div className="flex gap-2 flex-wrap">
 						{["", "Active", "Out of Stock"].map((status) => (
@@ -295,7 +344,7 @@ export default function ProductsPage() {
 
 			{/* Products Table */}
 			{(!isEmpty || isLoading) && (
-				<div className="bg-[#13161F] border border-white/10 rounded-xl overflow-hidden ">
+				<div className="lg:bg-[#13161F] lg:border lg:border-white/10 rounded-xl overflow-hidden ">
 					<div className="hidden lg:block overflow-x-auto ">
 						<table className="w-full text-sm min-w-[640px]">
 							<thead>
@@ -409,19 +458,34 @@ export default function ProductsPage() {
 															>
 																<Pencil className="w-4 h-4" />
 															</button>
-															{isLowStock && (
-																<button
-																	onClick={() =>
-																		handleRestockClick(
-																			product,
-																		)
-																	}
-																	className="p-1.5 rounded hover:bg-amber-500/20 text-amber-400 transition"
-																	title="Restock"
-																>
-																	<ArrowUp className="w-4 h-4" />
-																</button>
-															)}
+															{/* Low stock warning for user role */}
+															{isLowStock &&
+																user?.role ===
+																	"user" && (
+																	<span
+																		title="Stock is low — contact admin to restock"
+																		className="p-1.5 text-amber-400 cursor-help"
+																	>
+																		<AlertTriangle className="w-4 h-4" />
+																	</span>
+																)}
+
+															{/* Restock button for admin/manager/super_admin */}
+															{isLowStock &&
+																user?.role !==
+																	"user" && (
+																	<button
+																		onClick={() =>
+																			handleRestockClick(
+																				product,
+																			)
+																		}
+																		className="p-1.5 rounded hover:bg-amber-500/20 text-amber-400 transition"
+																		title="Restock"
+																	>
+																		<ArrowUp className="w-4 h-4" />
+																	</button>
+																)}
 															<button
 																onClick={() =>
 																	handleDeleteClick(
@@ -506,18 +570,31 @@ export default function ProductsPage() {
 												>
 													<Pencil className="w-4 h-4" />
 												</button>
-												{isLowStock && (
-													<button
-														onClick={() =>
-															handleRestockClick(
-																product,
-															)
-														}
-														className="p-1.5 rounded hover:bg-amber-500/20 text-amber-400 transition"
-													>
-														<ArrowUp className="w-4 h-4" />
-													</button>
-												)}
+												{isLowStock &&
+													user?.role === "user" && (
+														<span
+															title="Stock is low — contact admin to restock"
+															className="p-1.5 text-amber-400 cursor-help"
+														>
+															<AlertTriangle className="w-4 h-4" />
+														</span>
+													)}
+
+												{/* Restock button for admin/manager/super_admin */}
+												{isLowStock &&
+													user?.role !== "user" && (
+														<button
+															onClick={() =>
+																handleRestockClick(
+																	product,
+																)
+															}
+															className="p-1.5 rounded hover:bg-amber-500/20 text-amber-400 transition"
+															title="Restock"
+														>
+															<ArrowUp className="w-4 h-4" />
+														</button>
+													)}
 												<button
 													onClick={() =>
 														handleDeleteClick(

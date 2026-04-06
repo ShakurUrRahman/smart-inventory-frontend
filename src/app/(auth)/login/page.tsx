@@ -24,7 +24,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
 	const router = useRouter();
-	const { setUser, setToken, user, isHydrated, setIsHydrated } =
+	const { setUser, isHydrated, user, setToken, setIsHydrated } =
 		useAuthStore();
 	const [serverError, setServerError] = useState<string | null>(null);
 
@@ -43,21 +43,14 @@ export default function LoginPage() {
 		}
 	}, [user, isHydrated, router]);
 
-	// Don't render login form until hydration is complete
-	// if (!isHydrated) return null;
-	// if (user) return null; //
-
 	const onSubmit = async (data: LoginFormData) => {
 		try {
 			setServerError(null);
 			const res = await loginUser(data.email, data.password);
 			setUser(res.user);
 			setToken(res.token);
+			setIsHydrated(true); // ← add this
 			toast.success("Signed in successfully!");
-			setUser(res.user);
-			setToken(res.token);
-			setIsHydrated(true);
-
 			router.push("/dashboard");
 		} catch (err: any) {
 			const errorMsg =

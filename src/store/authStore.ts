@@ -1,14 +1,24 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import apiClient from "@/lib/api";
 import Cookies from "js-cookie";
-import { getMe } from "@/lib/authApi"; // ← add this import
+import { getMe } from "@/lib/authApi";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface CategoryPermissions {
+	canCreate: boolean;
+	canUpdate: boolean;
+	canDelete: boolean;
+}
 
 export interface User {
 	id: string;
 	name: string;
 	email: string;
-	role: "admin" | "manager";
+	role: "super_admin" | "admin" | "manager" | "user"; // ← expanded
+	isSuperAdmin: boolean; // ← new
+	categoryPermissions: CategoryPermissions; // ← new
+	isActive: boolean; // ← new
 	createdAt?: string;
 }
 
@@ -24,6 +34,8 @@ interface AuthStore {
 	setIsHydrated: (hydrated: boolean) => void;
 	rehydrateUser: () => Promise<void>;
 }
+
+// ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useAuthStore = create<AuthStore>()(
 	persist(
@@ -53,23 +65,42 @@ export const useAuthStore = create<AuthStore>()(
 				try {
 					const data = await getMe();
 					if (data?.user) {
-						const token = Cookies.get("token");
-						if (!token && get().token) {
-							// Use stored token from persist if cookie missing
+						// Re-set cookie if missing (cross-domain on Vercel)
+						const existingCookie = Cookies.get("token");
+						if (!existingCookie && get().token) {
 							Cookies.set("token", get().token!, {
 								expires: 7,
 								sameSite: "lax",
 								secure: process.env.NODE_ENV === "production",
 							});
 						}
-						set({ user: data.user, isHydrated: true });
+
+						// Map full RBAC user from /api/auth/me response
+						set({
+							user: {
+								id: data.user.id || data.user._id,
+								name: data.user.name,
+								email: data.user.email,
+								role: data.user.role,
+								isSuperAdmin: data.user.isSuperAdmin ?? false,
+								categoryPermissions: data.user
+									.categoryPermissions ?? {
+									canCreate: false,
+									canUpdate: false,
+									canDelete: false,
+								},
+								isActive: data.user.isActive ?? true,
+								createdAt: data.user.createdAt,
+							},
+							isHydrated: true,
+						});
 					} else {
 						Cookies.remove("token");
 						set({ user: null, token: null, isHydrated: true });
 					}
 				} catch {
 					Cookies.remove("token");
-					set({ user: null, token: null, isHydrated: true }); // ← always resolve
+					set({ user: null, token: null, isHydrated: true });
 				}
 			},
 		}),

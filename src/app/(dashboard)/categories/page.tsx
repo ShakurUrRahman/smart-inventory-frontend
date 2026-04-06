@@ -1,7 +1,5 @@
 "use client";
 
-// app/(dashboard)/categories/page.tsx
-
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -14,9 +12,12 @@ import { categoriesApi, Category } from "@/lib/categoriesApi";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { DeleteCategoryDialog } from "@/components/categories/DeleteCategoryDialog";
+import { useAuthStore } from "@/store/authStore";
 
 export default function CategoriesPage() {
 	const queryClient = useQueryClient();
+	const { user } = useAuthStore();
+
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
@@ -24,13 +25,29 @@ export default function CategoriesPage() {
 		null,
 	);
 
-	// Fetch categories
+	// ─── Permission checks ────────────────────────────────────────────────────
+	const isAdminOrSuper =
+		user?.role === "admin" || user?.role === "super_admin";
+
+	const canCreate =
+		isAdminOrSuper ||
+		(user?.role === "manager" && user?.categoryPermissions?.canCreate);
+
+	const canUpdate =
+		isAdminOrSuper ||
+		(user?.role === "manager" && user?.categoryPermissions?.canUpdate);
+
+	const canDelete =
+		isAdminOrSuper ||
+		(user?.role === "manager" && user?.categoryPermissions?.canDelete);
+
+	// ─── Queries ──────────────────────────────────────────────────────────────
 	const { data: categories = [], isLoading } = useQuery({
 		queryKey: ["categories"],
 		queryFn: categoriesApi.getAllCategories,
 	});
 
-	// Create mutation
+	// ─── Mutations ────────────────────────────────────────────────────────────
 	const createMutation = useMutation({
 		mutationFn: (data: { name: string }) =>
 			categoriesApi.createCategory(data),
@@ -39,12 +56,9 @@ export default function CategoriesPage() {
 			setAddDialogOpen(false);
 			toast.success("Category created successfully!");
 		},
-		onError: (error: Error) => {
-			toast.error(error.message);
-		},
+		onError: (error: Error) => toast.error(error.message),
 	});
 
-	// Update mutation
 	const updateMutation = useMutation({
 		mutationFn: ({ id, data }: { id: string; data: { name: string } }) =>
 			categoriesApi.updateCategory(id, data),
@@ -54,12 +68,9 @@ export default function CategoriesPage() {
 			setSelectedCategory(null);
 			toast.success("Category updated successfully!");
 		},
-		onError: (error: Error) => {
-			toast.error(error.message);
-		},
+		onError: (error: Error) => toast.error(error.message),
 	});
 
-	// Delete mutation
 	const deleteMutation = useMutation({
 		mutationFn: (id: string) => categoriesApi.deleteCategory(id),
 		onSuccess: () => {
@@ -68,9 +79,7 @@ export default function CategoriesPage() {
 			setSelectedCategory(null);
 			toast.success("Category deleted successfully!");
 		},
-		onError: (error: Error) => {
-			toast.error(error.message);
-		},
+		onError: (error: Error) => toast.error(error.message),
 	});
 
 	const handleAddCategory = async (data: { name: string }) => {
@@ -110,13 +119,17 @@ export default function CategoriesPage() {
 				title="Categories"
 				subtitle="Organize your products with categories"
 				action={
-					<Button
-						onClick={() => setAddDialogOpen(true)}
-						className="bg-indigo-600 hover:bg-indigo-500 gap-2"
-					>
-						<Plus className="w-4 h-4" />
-						<span className="hidden sm:inline">Add Category</span>
-					</Button>
+					canCreate ? (
+						<Button
+							onClick={() => setAddDialogOpen(true)}
+							className="bg-indigo-600 hover:bg-indigo-500 gap-2"
+						>
+							<Plus className="w-4 h-4" />
+							<span className="hidden sm:inline">
+								Add Category
+							</span>
+						</Button>
+					) : null
 				}
 			/>
 
@@ -132,16 +145,19 @@ export default function CategoriesPage() {
 							No categories yet
 						</h3>
 						<p className="text-zinc-400 mb-6">
-							Create your first category to organize your
-							products.
+							{canCreate
+								? "Create your first category to organize your products."
+								: "No categories have been created yet."}
 						</p>
-						<Button
-							onClick={() => setAddDialogOpen(true)}
-							className="bg-indigo-600 hover:bg-indigo-500 gap-2"
-						>
-							<Plus className="w-4 h-4" />
-							Create First Category
-						</Button>
+						{canCreate && (
+							<Button
+								onClick={() => setAddDialogOpen(true)}
+								className="bg-indigo-600 hover:bg-indigo-500 gap-2"
+							>
+								<Plus className="w-4 h-4" />
+								Create First Category
+							</Button>
+						)}
 					</div>
 				</div>
 			)}
@@ -160,11 +176,9 @@ export default function CategoriesPage() {
 								transition={{ duration: 0.2 }}
 							>
 								<div className="group relative bg-white/5 border border-white/10 rounded-xl p-4 sm:p-5 backdrop-blur hover:border-white/20 transition-all duration-200 overflow-hidden">
-									{/* Hover gradient */}
 									<div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-indigo-500/0 group-hover:from-indigo-500/5 group-hover:to-indigo-500/5 transition-all duration-300" />
 
 									<div className="relative z-10">
-										{/* Icon + Name + Actions */}
 										<div className="flex items-start justify-between mb-4">
 											<div className="flex items-start gap-3 flex-1 min-w-0">
 												<div className="p-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex-shrink-0">
@@ -177,40 +191,45 @@ export default function CategoriesPage() {
 												</div>
 											</div>
 
-											{/* Action buttons — always visible on mobile, hover on desktop */}
-											<div className="flex items-center gap-1 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-												<button
-													onClick={() =>
-														handleEditClick(
-															category,
-														)
-													}
-													className="p-1.5 rounded-lg hover:bg-indigo-500/20 text-zinc-400 hover:text-indigo-300 transition-colors"
-													disabled={
-														updateMutation.isPending
-													}
-													title="Rename category"
-												>
-													<Pencil className="w-4 h-4" />
-												</button>
-												<button
-													onClick={() =>
-														handleDeleteClick(
-															category,
-														)
-													}
-													className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-400 hover:text-red-300 transition-colors"
-													disabled={
-														deleteMutation.isPending
-													}
-													title="Delete category"
-												>
-													<Trash2 className="w-4 h-4" />
-												</button>
-											</div>
+											{/* Action buttons */}
+											{(canUpdate || canDelete) && (
+												<div className="flex items-center gap-1 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+													{canUpdate && (
+														<button
+															onClick={() =>
+																handleEditClick(
+																	category,
+																)
+															}
+															className="p-1.5 rounded-lg hover:bg-indigo-500/20 text-zinc-400 hover:text-indigo-300 transition-colors"
+															disabled={
+																updateMutation.isPending
+															}
+															title="Rename category"
+														>
+															<Pencil className="w-4 h-4" />
+														</button>
+													)}
+													{canDelete && (
+														<button
+															onClick={() =>
+																handleDeleteClick(
+																	category,
+																)
+															}
+															className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-400 hover:text-red-300 transition-colors"
+															disabled={
+																deleteMutation.isPending
+															}
+															title="Delete category"
+														>
+															<Trash2 className="w-4 h-4" />
+														</button>
+													)}
+												</div>
+											)}
 										</div>
 
-										{/* Product Count */}
 										<div className="text-sm text-zinc-400">
 											{category.productCount === 0
 												? "No products"
@@ -224,25 +243,27 @@ export default function CategoriesPage() {
 				</div>
 			)}
 
-			{/* Add Dialog */}
-			<AddCategoryDialog
-				open={addDialogOpen}
-				onOpenChange={setAddDialogOpen}
-				onSubmit={handleAddCategory}
-				isLoading={createMutation.isPending}
-			/>
+			{/* Dialogs */}
+			{canCreate && (
+				<AddCategoryDialog
+					open={addDialogOpen}
+					onOpenChange={setAddDialogOpen}
+					onSubmit={handleAddCategory}
+					isLoading={createMutation.isPending}
+				/>
+			)}
 
-			{/* Update Dialog */}
-			<UpdateCategoryDialog
-				open={updateDialogOpen}
-				onOpenChange={setUpdateDialogOpen}
-				onSubmit={handleUpdateCategory}
-				isLoading={updateMutation.isPending}
-				category={selectedCategory}
-			/>
+			{canUpdate && (
+				<UpdateCategoryDialog
+					open={updateDialogOpen}
+					onOpenChange={setUpdateDialogOpen}
+					onSubmit={handleUpdateCategory}
+					isLoading={updateMutation.isPending}
+					category={selectedCategory}
+				/>
+			)}
 
-			{/* Delete Dialog */}
-			{selectedCategory && (
+			{canDelete && selectedCategory && (
 				<DeleteCategoryDialog
 					open={deleteDialogOpen}
 					onOpenChange={setDeleteDialogOpen}

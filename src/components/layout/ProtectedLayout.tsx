@@ -1,34 +1,55 @@
-// components/layout/ProtectedLayout.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
-import { Loader2 } from "lucide-react";
 
-export function ProtectedLayout({ children }: { children: React.ReactNode }) {
-	const { user, isHydrated } = useAuthStore();
+interface ProtectedLayoutProps {
+	children: React.ReactNode;
+}
+
+export function ProtectedLayout({ children }: ProtectedLayoutProps) {
 	const router = useRouter();
+	const { user, rehydrateUser } = useAuthStore();
+	const [isChecking, setIsChecking] = useState(true);
 
 	useEffect(() => {
-		if (isHydrated && !user) {
-			router.replace("/login");
-		}
-	}, [isHydrated, user, router]);
+		const checkAuth = async () => {
+			// If user already exists in store (just logged in or persisted)
+			if (user) {
+				setIsChecking(false);
+				return;
+			}
 
-	// Show loader while checking auth
-	if (!isHydrated) {
+			// Try to rehydrate from token
+			try {
+				await rehydrateUser();
+				// After rehydration, check again
+				const currentUser = useAuthStore.getState().user;
+				if (!currentUser) {
+					router.replace("/login");
+				}
+			} catch {
+				router.replace("/login");
+			} finally {
+				setIsChecking(false);
+			}
+		};
+
+		checkAuth();
+	}, []); // ← run only once on mount
+
+	if (isChecking) {
 		return (
-			<div className="min-h-screen bg-[#0F1117] flex items-center justify-center">
-				<div className="flex flex-col items-center gap-3">
-					<Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+			<div className="min-h-screen bg-[#0a0d12] flex items-center justify-center">
+				<div className="text-white text-center">
+					<div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
 					<p className="text-zinc-400 text-sm">Loading...</p>
 				</div>
 			</div>
 		);
 	}
 
-	// Don't render children if not authenticated
 	if (!user) return null;
 
 	return <>{children}</>;

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
 	ShoppingBag,
 	Clock,
@@ -33,6 +32,10 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { dashboardApi } from "@/lib/dashboardApi";
 import { SkeletonGrid } from "@/components/shared/Skeleton";
 import { formatDistanceToNow } from "date-fns";
+import { useSearchParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import UserDashboard from "@/components/dashboard/UserDashboard";
+import { useAuthStore } from "@/store/authStore";
 
 const STAT_COLORS = [
 	{ icon: "indigo", bg: "bg-indigo-500/20" },
@@ -76,6 +79,17 @@ function AnimatedNumber({ value }: { value: number }) {
 
 export default function DashboardPage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const { user } = useAuthStore();
+
+	// ── Handle unauthorized redirect from middleware ────────────────────────
+	useEffect(() => {
+		if (searchParams.get("error") === "unauthorized") {
+			toast.error("You don't have permission to access that page.");
+			// Remove the query param from URL without full reload
+			router.replace("/dashboard");
+		}
+	}, [searchParams, router]);
 
 	// Fetch all dashboard data
 	const { data: stats, isLoading: statsLoading } = useQuery({
@@ -113,6 +127,10 @@ export default function DashboardPage() {
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 	});
+
+	if (user?.role === "user") {
+		return <UserDashboard />; // simple view showing their submissions
+	}
 
 	if (statsLoading) {
 		return (
@@ -180,7 +198,10 @@ export default function DashboardPage() {
 
 	return (
 		<>
-			<PageHeader title="Dashboard" subtitle="Inventory overview" />
+			<PageHeader
+				title={`Welcome, ${user?.name} 👋`}
+				subtitle="Track your inventory and their pending approvals"
+			/>
 
 			{/* ROW 1: STAT CARDS */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -467,16 +488,17 @@ export default function DashboardPage() {
 				</motion.div>
 			</div>
 
-			{/* ROW 3: TABLES */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* Product Summary Table (66%) */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.6 }}
-					className="lg:col-span-2 bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur"
+					className="lg:col-span-2 bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur flex flex-col h-[420px]"
 				>
-					<div className="flex items-center justify-between mb-6">
+					<div className="flex items-center justify-between mb-6 flex-shrink-0">
+						{" "}
+						{/* ← flex-shrink-0 */}
 						<h3 className="text-lg font-semibold text-white">
 							Product Stock Summary
 						</h3>
@@ -488,7 +510,9 @@ export default function DashboardPage() {
 						</Link>
 					</div>
 
-					<div className="space-y-1">
+					<div className="overflow-y-auto overflow-x-hidden space-y-1 flex-1">
+						{" "}
+						{/* ← flex-1 to fill height */}
 						{productSummary.length > 0 ? (
 							productSummary.map((product, idx) => {
 								const percentage =
@@ -512,7 +536,6 @@ export default function DashboardPage() {
 												{product.category}
 											</p>
 										</div>
-
 										<div className="flex items-center gap-4 ml-4">
 											{isOutOfStock ? (
 												<span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">
@@ -520,11 +543,7 @@ export default function DashboardPage() {
 												</span>
 											) : (
 												<span
-													className={`text-sm font-semibold ${
-														isLow
-															? "text-amber-400"
-															: "text-green-400"
-													}`}
+													className={`text-sm font-semibold ${isLow ? "text-amber-400" : "text-green-400"}`}
 												>
 													{product.stock}
 												</span>
@@ -546,9 +565,11 @@ export default function DashboardPage() {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.7 }}
-					className="bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur"
+					className="bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur flex flex-col h-[420px]"
 				>
-					<div className="flex items-center justify-between mb-6">
+					<div className="flex items-center justify-between mb-6 flex-shrink-0">
+						{" "}
+						{/* ← flex-shrink-0 */}
 						<h3 className="text-lg font-semibold text-white">
 							Recent Activity
 						</h3>
@@ -560,9 +581,11 @@ export default function DashboardPage() {
 						</Link>
 					</div>
 
-					<div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
+					<div className="overflow-y-auto overflow-x-hidden space-y-3 flex-1">
+						{" "}
+						{/* ← flex-1 instead of max-h-96 */}
 						{recentActivity.length > 0 ? (
-							recentActivity.slice(0, 8).map((activity, idx) => {
+							recentActivity.slice(0, 15).map((activity, idx) => {
 								const iconClass =
 									ACTIVITY_COLORS[activity.entityType] ||
 									"bg-gray-500/20 text-gray-400";
@@ -593,9 +616,7 @@ export default function DashboardPage() {
 													new Date(
 														activity.createdAt,
 													),
-													{
-														addSuffix: true,
-													},
+													{ addSuffix: true },
 												)}
 											</p>
 										</div>

@@ -137,6 +137,26 @@ export default function RestockPage() {
 		return Math.min((current / threshold) * 100, 100);
 	};
 
+	const getPriorityStyle = (percentage: number) => {
+		if (percentage <= 30)
+			return {
+				dot: "bg-red-500",
+				badge: "bg-red-500/20 text-red-400 border-red-500/30",
+				icon: "🔴",
+			};
+		if (percentage <= 60)
+			return {
+				dot: "bg-amber-500",
+				badge: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+				icon: "🟡",
+			};
+		return {
+			dot: "bg-green-500",
+			badge: "bg-green-500/20 text-green-400 border-green-500/30",
+			icon: "🟢",
+		};
+	};
+
 	const getProgressBarColor = (percentage: number) => {
 		if (percentage <= 30) return "bg-red-500";
 		if (percentage <= 60) return "bg-amber-500";
@@ -165,6 +185,14 @@ export default function RestockPage() {
 			setSelectedItem(null);
 		}
 	};
+
+	// Get everything at once
+	// const percentage = getStockPercentage(currentStock, threshold);
+	// const colors = getStockLevelColors(currentStock, threshold);
+	// const status = getStockStatus(percentage);
+
+	// // Or use the combined function
+	// const stock = getStockInfo(currentStock, threshold);
 
 	return (
 		<>

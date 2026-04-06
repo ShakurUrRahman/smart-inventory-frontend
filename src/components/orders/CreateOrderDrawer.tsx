@@ -420,10 +420,15 @@ function ProductSelect({
 				<input
 					type="number"
 					min="1"
-					value={quantity}
-					onChange={(e) =>
-						setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-					}
+					value={quantity === 0 ? "" : quantity}
+					onChange={(e) => {
+						const val = e.target.value;
+						if (val === "" || val === "0") {
+							setQuantity(0); // allow empty/0 temporarily
+						} else {
+							setQuantity(Math.max(1, parseInt(val) || 0));
+						}
+					}}
 					disabled={disabled}
 					className="w-20 px-2 py-2 rounded-lg bg-[#1C1F2A] border border-zinc-700/60 text-white text-sm focus:border-indigo-500 focus:outline-none"
 					placeholder="Qty"
@@ -432,7 +437,7 @@ function ProductSelect({
 				<Button
 					type="button"
 					onClick={handleAdd}
-					disabled={disabled || !selectedProductId || quantity < 1}
+					disabled={disabled || !selectedProductId || quantity < 1} // ← quantity < 1 covers 0 and empty
 					className="bg-indigo-600 hover:bg-indigo-500 gap-1 px-3 flex-shrink-0"
 				>
 					<Plus className="w-4 h-4" />

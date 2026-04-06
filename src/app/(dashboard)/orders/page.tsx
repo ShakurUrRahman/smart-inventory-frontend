@@ -130,22 +130,6 @@ export default function OrdersPage() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const statusCounts = useMemo(() => {
-		const counts: Record<string, number> = {
-			Pending: 0,
-			Confirmed: 0,
-			Shipped: 0,
-			Delivered: 0,
-			Cancelled: 0,
-		};
-		if (ordersData?.data) {
-			ordersData.data.forEach((order) => {
-				counts[order.status]++;
-			});
-		}
-		return counts;
-	}, [ordersData?.data]);
-
 	const orders = ordersData?.data || [];
 	const total = ordersData?.total || 0;
 	const totalPages = ordersData?.totalPages || 1;
@@ -255,6 +239,31 @@ export default function OrdersPage() {
 		</div>
 	);
 
+	const { data: allOrdersData } = useQuery({
+		queryKey: ["orders-counts"],
+		queryFn: () => ordersApi.getAllOrders({ limit: 1000 }), // get all for counting
+		staleTime: 30000,
+	});
+
+	const statusCounts = useMemo(() => {
+		const counts: Record<string, number> = {
+			Pending: 0,
+			Confirmed: 0,
+			Shipped: 0,
+			Delivered: 0,
+			Cancelled: 0,
+		};
+		if (allOrdersData?.data) {
+			allOrdersData.data.forEach((order) => {
+				counts[order.status]++;
+			});
+		}
+		return counts;
+	}, [allOrdersData?.data]);
+
+	const ALL_TABS = ["", ...STATUS_OPTIONS];
+	const activeIndex = ALL_TABS.indexOf(statusFilter);
+
 	return (
 		<motion.div
 			initial={{ opacity: 0, y: 12 }}
@@ -276,43 +285,65 @@ export default function OrdersPage() {
 			/>
 
 			{/* Status Filter Tabs */}
-			<div className="flex gap-2 sm:gap-3 mb-6 border-b border-white/10 pb-2 overflow-x-auto whitespace-nowrap">
-				<button
-					onClick={() => {
-						setStatusFilter("");
-						setPage(1);
-						updateUrl(search, "", dateFilter, 1);
-					}}
-					className={`flex-shrink-0 px-3 sm:px-4 py-2 text-sm rounded-t-lg font-medium transition-all ${
-						statusFilter === ""
-							? "text-indigo-400 border-b-2 border-indigo-400"
-							: "text-zinc-400 hover:text-zinc-300"
-					}`}
-				>
-					All
-				</button>
-				{STATUS_OPTIONS.map((status) => (
-					<button
-						key={status}
-						onClick={() => {
-							setStatusFilter(status);
-							setPage(1);
-							updateUrl(search, status, dateFilter, 1);
-						}}
-						className={`flex-shrink-0 px-3 sm:px-4 py-2 text-sm rounded-t-lg font-medium transition-all flex items-center gap-2 ${
-							statusFilter === status
-								? "text-indigo-400 border-b-2 border-indigo-400"
-								: "text-zinc-400 hover:text-zinc-300"
-						}`}
-					>
-						{status}
-						{statusCounts[status] > 0 && (
-							<span className="text-xs bg-white/10 px-1.5 py-0.5 rounded-full">
-								{statusCounts[status]}
-							</span>
-						)}
-					</button>
-				))}
+			<div className="flex gap-2 sm:gap-3 hide-scrollbar border-white/10 pb-2 overflow-x-auto whitespace-nowrap">
+				<div className="relative mb-6">
+					<div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 overflow-x-auto hide-scrollbar">
+						{[
+							{ label: "All", value: "" },
+							...STATUS_OPTIONS.map((s) => ({
+								label: s,
+								value: s,
+							})),
+						].map(({ label, value }) => (
+							<button
+								key={value || "all"}
+								onClick={() => {
+									setStatusFilter(value);
+									setPage(1);
+									updateUrl(search, value, dateFilter, 1);
+								}}
+								className="relative flex-shrink-0 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 flex items-center gap-2"
+							>
+								{/* Sliding background */}
+								{statusFilter === value && (
+									<motion.div
+										layoutId="activeTabBg"
+										className="absolute inset-0 bg-indigo-600 rounded-lg"
+										transition={{
+											type: "spring",
+											stiffness: 400,
+											damping: 35,
+										}}
+									/>
+								)}
+
+								{/* Tab label */}
+								<span
+									className={`relative z-10 transition-colors duration-200 ${
+										statusFilter === value
+											? "text-white"
+											: "text-zinc-400 hover:text-zinc-300"
+									}`}
+								>
+									{label}
+								</span>
+
+								{/* Badge */}
+								{value && statusCounts[value] > 0 && (
+									<span
+										className={`relative z-10 text-xs px-1.5 py-0.5 rounded-full transition-colors ${
+											statusFilter === value
+												? "bg-white/20 text-white"
+												: "bg-white/10 text-zinc-400"
+										}`}
+									>
+										{statusCounts[value]}
+									</span>
+								)}
+							</button>
+						))}
+					</div>
+				</div>
 			</div>
 
 			{/* Filter Bar */}
@@ -324,8 +355,20 @@ export default function OrdersPage() {
 							placeholder="Search by customer name..."
 							value={search}
 							onChange={(e) => handleSearchChange(e.target.value)}
-							className="pl-10 bg-[#1C1F2A] border-zinc-700/60"
+							className="pl-10 bg-[#1C1F2A] border-zinc-700/60 focus:outline-none focus:ring-0
+  data-[highlighted]:bg-white/10
+  data-[highlighted]:text-white
+  data-[highlighted]:outline-none
+  data-[highlighted]:ring-0"
 						/>
+						{search && (
+							<button
+								onClick={() => handleSearchChange("")}
+								className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
+							>
+								<X className="w-4 h-4" />
+							</button>
+						)}
 					</div>
 					<div className="relative">
 						<Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
