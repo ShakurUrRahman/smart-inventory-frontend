@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +15,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Modal,
+	ModalBody,
+	ModalFooter,
+	ModalHeader,
+} from "../shared/DialogModal";
 
 const addCategorySchema = z.object({
 	name: z
@@ -47,27 +53,33 @@ export function AddCategoryDialog({
 		resolver: zodResolver(addCategorySchema),
 	});
 
+	useEffect(() => {
+		if (!open) {
+			reset();
+		}
+	}, [open, reset]);
+
 	const handleFormSubmit = async (data: AddCategoryFormData) => {
 		await onSubmit(data);
 		reset();
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="w-[calc(100%-2rem)] max-w-md mx-auto rounded-xl p-5 sm:p-6">
-				<DialogHeader className="mb-2">
-					<DialogTitle className="text-lg sm:text-xl">
-						Add Category
-					</DialogTitle>
-					<DialogDescription className="text-sm text-zinc-400">
+		<Modal open={open} onOpenChange={onOpenChange}>
+			<ModalHeader>
+				<div className="mb-2">
+					<div className="text-lg sm:text-xl">Add Category</div>
+					<div className="text-sm text-zinc-400">
 						Create a new category for organizing your products.
-					</DialogDescription>
-				</DialogHeader>
+					</div>
+				</div>
+			</ModalHeader>
 
-				<form
-					onSubmit={handleSubmit(handleFormSubmit)}
-					className="space-y-4"
-				>
+			<form
+				onSubmit={handleSubmit(handleFormSubmit)}
+				className="space-y-4"
+			>
+				<ModalBody>
 					<div className="space-y-1.5">
 						<Label htmlFor="name" className="text-zinc-300 text-sm">
 							Category Name
@@ -85,7 +97,9 @@ export function AddCategoryDialog({
 							</p>
 						)}
 					</div>
+				</ModalBody>
 
+				<ModalFooter>
 					<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
 						<Button
 							type="button"
@@ -111,8 +125,8 @@ export function AddCategoryDialog({
 							)}
 						</Button>
 					</div>
-				</form>
-			</DialogContent>
-		</Dialog>
+				</ModalFooter>
+			</form>
+		</Modal>
 	);
 }

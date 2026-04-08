@@ -6,12 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Pencil } from "lucide-react";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-} from "@/components/ui/dialog";
+	Modal,
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+} from "@/components/shared/DialogModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,30 +60,27 @@ export function UpdateCategoryDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="bg-[#13151C] border border-white/10 text-white w-[calc(100vw-2rem)] sm:max-w-md mx-auto rounded-xl">
-				<DialogHeader>
-					<div className="flex items-center gap-3 mb-1">
-						<div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex-shrink-0">
-							<Pencil className="w-4 h-4 text-indigo-400" />
-						</div>
-						<DialogTitle className="text-white text-base sm:text-lg font-semibold">
-							Rename Category
-						</DialogTitle>
+		<Modal open={open} onOpenChange={onOpenChange}>
+			<ModalHeader>
+				<div className="flex items-center gap-3 mb-1">
+					<div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex-shrink-0">
+						<Pencil className="w-4 h-4 text-indigo-400" />
 					</div>
-					<p className="text-zinc-400 text-sm pl-11">
-						Update the name for{" "}
-						<span className="text-white font-medium">
-							{category?.name}
-						</span>
-					</p>
-				</DialogHeader>
+					<h2 className="text-white text-base sm:text-lg font-semibold">
+						Rename Category
+					</h2>
+				</div>
+				<p className="text-zinc-400 text-sm pl-11">
+					Update the name for{" "}
+					<span className="text-white font-medium">
+						{category?.name}
+					</span>
+				</p>
+			</ModalHeader>
 
-				<form
-					onSubmit={handleSubmit(handleFormSubmit)}
-					className="mt-2"
-				>
-					<div className="space-y-1.5 mb-6">
+			<form onSubmit={handleSubmit(handleFormSubmit)}>
+				<ModalBody>
+					<div className="space-y-1.5">
 						<Label
 							htmlFor="update-name"
 							className="text-zinc-300 text-sm font-medium"
@@ -106,34 +102,34 @@ export function UpdateCategoryDialog({
 							</p>
 						)}
 					</div>
+				</ModalBody>
 
-					<DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2">
-						<Button
-							type="button"
-							variant="ghost"
-							onClick={() => onOpenChange(false)}
-							disabled={isLoading}
-							className="w-full sm:w-auto text-zinc-400 hover:text-white hover:bg-white/10"
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							disabled={isLoading}
-							className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white"
-						>
-							{isLoading ? (
-								<>
-									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-									Saving...
-								</>
-							) : (
-								"Save Changes"
-							)}
-						</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
+				<ModalFooter>
+					<Button
+						type="button"
+						variant="ghost"
+						onClick={() => onOpenChange(false)}
+						disabled={isLoading}
+						className="w-full sm:w-auto border border-white/30 text-zinc-400 hover:text-white hover:bg-white/10"
+					>
+						Cancel
+					</Button>
+					<Button
+						type="submit"
+						disabled={isLoading}
+						className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white"
+					>
+						{isLoading ? (
+							<>
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+								Saving...
+							</>
+						) : (
+							"Save Changes"
+						)}
+					</Button>
+				</ModalFooter>
+			</form>
+		</Modal>
 	);
 }
