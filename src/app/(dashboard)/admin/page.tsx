@@ -1,48 +1,29 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
 	Clock,
 	Lock,
 	ShieldPlus,
 	ShieldMinus,
-	UserPlus,
 	UserMinus,
 	UserCheck,
 	Search,
 	CheckCircle,
 	Loader2,
-	X,
+	ChevronDown,
+	ChevronUp,
+	Package,
+	Tag,
+	Users,
+	AlertTriangle,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -56,509 +37,468 @@ import {
 	approveProduct,
 	rejectProduct,
 } from "@/lib/adminApi";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+} from "@/components/ui/dialog";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetDescription,
+} from "@/components/ui/sheet";
+import { PageHeader } from "@/components/layout/PageHeader";
 
-// ─────────────────────────────────────────────────────────────
-// SKELETON LOADERS
-// ─────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const ROLE_STYLES: Record<
+	string,
+	{ bg: string; text: string; border: string; icon: string }
+> = {
+	super_admin: {
+		bg: "bg-yellow-500/20",
+		text: "text-yellow-400",
+		border: "border-yellow-500/30",
+		icon: "👑",
+	},
+	admin: {
+		bg: "bg-indigo-500/20",
+		text: "text-indigo-400",
+		border: "border-indigo-500/30",
+		icon: "🛡️",
+	},
+	manager: {
+		bg: "bg-blue-500/20",
+		text: "text-blue-400",
+		border: "border-blue-500/30",
+		icon: "💼",
+	},
+	user: {
+		bg: "bg-zinc-500/20",
+		text: "text-zinc-400",
+		border: "border-zinc-500/30",
+		icon: "👤",
+	},
+};
 
-const UserTableSkeleton = () => (
-	<>
-		{[...Array(5)].map((_, i) => (
-			<TableRow key={i}>
-				<TableCell className="animate-pulse bg-muted h-12" />
-				<TableCell className="animate-pulse bg-muted h-12" />
-				<TableCell className="animate-pulse bg-muted h-12" />
-				<TableCell className="animate-pulse bg-muted h-12" />
-			</TableRow>
-		))}
-	</>
-);
-
-const ApprovalCardSkeleton = () => (
-	<div className="rounded-lg border border-border bg-card animate-pulse p-6 h-72" />
-);
-
-// ─────────────────────────────────────────────────────────────
-// ROLE BADGE COMPONENT
-// ─────────────────────────────────────────────────────────────
+const TABS = [
+	{ id: "users", label: "User Management", icon: Users },
+	{ id: "approvals", label: "Pending Approvals", icon: Package },
+];
 
 function RoleBadge({ role }: { role: string }) {
-	const styles: Record<
-		string,
-		{ badge: string; text: string; icon: string }
-	> = {
-		super_admin: {
-			badge: "bg-yellow-100 text-yellow-900 border-yellow-300",
-			text: "text-yellow-700",
-			icon: "👑",
-		},
-		admin: {
-			badge: "bg-indigo-100 text-indigo-900 border-indigo-300",
-			text: "text-indigo-700",
-			icon: "🛡️",
-		},
-		manager: {
-			badge: "bg-blue-100 text-blue-900 border-blue-300",
-			text: "text-blue-700",
-			icon: "💼",
-		},
-		user: {
-			badge: "bg-gray-100 text-gray-900 border-gray-300",
-			text: "text-gray-700",
-			icon: "👤",
-		},
-	};
-
-	const style = styles[role] || styles.user;
-	const roleLabel = role.replace("_", " ");
-
+	const s = ROLE_STYLES[role] || ROLE_STYLES.user;
 	return (
-		<Badge variant="outline" className={`${style.badge} border`}>
-			<span className="mr-1">{style.icon}</span>
-			{roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)}
-		</Badge>
+		<span
+			className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${s.bg} ${s.text} ${s.border}`}
+		>
+			<span>{s.icon}</span>
+			{role.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+		</span>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────
-// USER AVATAR COMPONENT
-// ─────────────────────────────────────────────────────────────
-
 function UserAvatar({ name, role }: { name: string; role: string }) {
-	const roleColors: Record<string, string> = {
+	const colors: Record<string, string> = {
 		super_admin: "bg-yellow-500",
 		admin: "bg-indigo-500",
 		manager: "bg-blue-500",
-		user: "bg-gray-500",
+		user: "bg-zinc-500",
 	};
-
 	const initials = name
 		.split(" ")
 		.map((n) => n[0])
 		.join("")
 		.toUpperCase()
 		.slice(0, 2);
-
 	return (
 		<div
-			className={`${roleColors[role] || "bg-gray-500"} w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold`}
+			className={`${colors[role] || "bg-zinc-500"} w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}
 		>
 			{initials}
 		</div>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────
-// TAB 1: USER MANAGEMENT
-// ─────────────────────────────────────────────────────────────
+// ─── User Row ─────────────────────────────────────────────────────────────────
+function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
+	const [expanded, setExpanded] = useState(false);
+	const queryClient = useQueryClient();
 
-interface UserManagementProps {
-	currentUser: any;
-	isLoadingUsers: boolean;
-	users: any[];
-	totalUsers: number;
-	onRoleChange?: () => void;
+	const updatePermsMutation = useMutation({
+		mutationFn: ({ key, value }: { key: string; value: boolean }) =>
+			updateCategoryPermissions(user.id, { [key]: value } as any),
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+			toast.success(
+				`${user.name}: ${variables.key.replace("can", "Can ")} ${variables.value ? "✅ enabled" : "❌ disabled"}`,
+			);
+		},
+		onError: (error: any) => toast.error(error.message),
+	});
+
+	const canModify = !user.isSuperAdmin;
+	const showPromoteManager = user.role === "user";
+	const showPromoteAdmin =
+		user.role === "manager" && currentUser?.isSuperAdmin;
+	const showDemoteManager =
+		user.role === "admin" && currentUser?.isSuperAdmin;
+	const showDemoteUser =
+		user.role === "manager" &&
+		(currentUser?.role === "admin" || currentUser?.isSuperAdmin);
+
+	return (
+		<motion.div
+			layout
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			className="bg-[#13161F] border border-white/10 rounded-xl overflow-hidden"
+		>
+			{/* Main Row */}
+			<div className="flex items-center gap-3 p-4">
+				<UserAvatar name={user.name} role={user.role} />
+
+				<div className="flex-1 min-w-0">
+					<div className="flex items-center gap-2 flex-wrap">
+						<p className="text-white font-medium text-sm truncate">
+							{user.name}
+						</p>
+						{user.isSuperAdmin && (
+							<Lock className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+						)}
+					</div>
+					<p className="text-zinc-500 text-xs truncate">
+						{user.email}
+					</p>
+				</div>
+
+				<RoleBadge role={user.role} />
+
+				{canModify && (
+					<button
+						onClick={() => setExpanded(!expanded)}
+						className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 transition flex-shrink-0"
+					>
+						{expanded ? (
+							<ChevronUp className="w-4 h-4" />
+						) : (
+							<ChevronDown className="w-4 h-4" />
+						)}
+					</button>
+				)}
+			</div>
+
+			{/* Expanded Panel */}
+			<AnimatePresence>
+				{expanded && canModify && (
+					<motion.div
+						initial={{ height: 0, opacity: 0 }}
+						animate={{ height: "auto", opacity: 1 }}
+						exit={{ height: 0, opacity: 0 }}
+						transition={{ duration: 0.25 }}
+						className="overflow-hidden border-t border-white/5"
+					>
+						<div className="p-4 space-y-4 bg-black/20">
+							{/* Role Actions */}
+							<div className="space-y-2">
+								<p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">
+									Role Actions
+								</p>
+								<div className="flex flex-wrap gap-2">
+									{showPromoteManager && (
+										<button
+											onClick={() =>
+												onAction("make-manager", user)
+											}
+											className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-xs transition"
+										>
+											<UserCheck className="w-3.5 h-3.5" />{" "}
+											Make Manager
+										</button>
+									)}
+									{showPromoteAdmin && (
+										<button
+											onClick={() =>
+												onAction("make-admin", user)
+											}
+											className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 text-xs transition"
+										>
+											<ShieldPlus className="w-3.5 h-3.5" />{" "}
+											Make Admin
+										</button>
+									)}
+									{showDemoteManager && (
+										<button
+											onClick={() =>
+												onAction("demote-manager", user)
+											}
+											className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 text-xs transition"
+										>
+											<ShieldMinus className="w-3.5 h-3.5" />{" "}
+											Demote to Manager
+										</button>
+									)}
+									{showDemoteUser && (
+										<button
+											onClick={() =>
+												onAction("demote-user", user)
+											}
+											className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 text-xs transition"
+										>
+											<UserMinus className="w-3.5 h-3.5" />{" "}
+											Demote to User
+										</button>
+									)}
+									{user.roleHistory?.length > 0 && (
+										<button
+											onClick={() => onViewHistory(user)}
+											className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10 text-xs transition"
+										>
+											<Clock className="w-3.5 h-3.5" />{" "}
+											View History
+										</button>
+									)}
+								</div>
+							</div>
+
+							{/* Category Permissions — only for managers */}
+							{user.role === "manager" && (
+								<div className="space-y-2">
+									<p className="text-zinc-500 text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
+										<Tag className="w-3 h-3" /> Category
+										Permissions
+									</p>
+									<div className="grid grid-cols-3 gap-3">
+										{[
+											{
+												key: "canCreate",
+												label: "Create",
+											},
+											{
+												key: "canUpdate",
+												label: "Update",
+											},
+											{
+												key: "canDelete",
+												label: "Delete",
+											},
+										].map(({ key, label }) => {
+											const checked =
+												user.categoryPermissions?.[
+													key
+												] || false;
+											const isUpdating =
+												updatePermsMutation.isPending &&
+												updatePermsMutation.variables
+													?.key === key;
+											return (
+												<div
+													key={key}
+													className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors ${
+														checked
+															? "bg-indigo-500/10 border-indigo-500/20"
+															: "bg-white/3 border-white/10"
+													}`}
+												>
+													<span
+														className={`text-xs font-medium ${checked ? "text-indigo-400" : "text-zinc-500"}`}
+													>
+														{label}
+													</span>
+													{isUpdating ? (
+														<Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+													) : (
+														<Switch
+															checked={checked}
+															onCheckedChange={(
+																value,
+															) =>
+																updatePermsMutation.mutate(
+																	{
+																		key,
+																		value,
+																	},
+																)
+															}
+															disabled={
+																updatePermsMutation.isPending
+															}
+														/>
+													)}
+												</div>
+											);
+										})}
+									</div>
+								</div>
+							)}
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+		</motion.div>
+	);
 }
 
+// ─── User Management Tab ──────────────────────────────────────────────────────
 function UserManagement({
 	currentUser,
 	isLoadingUsers,
 	users,
-	totalUsers,
 	onRoleChange,
-}: UserManagementProps) {
+}: any) {
 	const [roleFilter, setRoleFilter] = useState("all");
 	const [searchQuery, setSearchQuery] = useState("");
-	const [selectedUser, setSelectedUser] = useState<any>(null);
-	const [roleHistoryUser, setRoleHistoryUser] = useState<any>(null);
 	const [confirmAction, setConfirmAction] = useState<{
 		type: string;
 		user: any;
 	} | null>(null);
+	const [roleHistoryUser, setRoleHistoryUser] = useState<any>(null);
 	const queryClient = useQueryClient();
 
-	// Mutations
-	const promoteToManagerMutation = useMutation({
-		mutationFn: (userId: string) => promoteToManager(userId),
-		onSuccess: (updatedUser) => {
+	const promoteMutation = useMutation({
+		mutationFn: ({ type, userId }: { type: string; userId: string }) => {
+			if (type === "make-manager") return promoteToManager(userId);
+			if (type === "make-admin") return promoteToAdmin(userId);
+			if (type === "demote-manager") return demoteAdminToManager(userId);
+			return demoteManagerToUser(userId);
+		},
+		onSuccess: (updatedUser: any, variables) => {
 			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-			toast.success(`${updatedUser.name} promoted to Manager`);
+			const msgs: Record<string, string> = {
+				"make-manager": `${updatedUser?.name || "User"} promoted to Manager 🎉`,
+				"make-admin": `${updatedUser?.name || "User"} promoted to Admin 🛡️`,
+				"demote-manager": `${updatedUser?.name || "User"} demoted to Manager`,
+				"demote-user": `${updatedUser?.name || "User"} demoted to User`,
+			};
+			toast.success(msgs[variables.type] || "Role updated");
 			setConfirmAction(null);
 			onRoleChange?.();
 		},
-		onError: (error: any) => {
-			toast.error(error.message);
-		},
+		onError: (error: any) => toast.error(error.message),
 	});
 
-	const promoteToAdminMutation = useMutation({
-		mutationFn: (userId: string) => promoteToAdmin(userId),
-		onSuccess: (updatedUser) => {
-			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-			toast.success(`${updatedUser.name} promoted to Admin`);
-			setConfirmAction(null);
-			onRoleChange?.();
-		},
-		onError: (error: any) => {
-			toast.error(error.message);
-		},
-	});
-
-	const demoteAdminMutation = useMutation({
-		mutationFn: (userId: string) => demoteAdminToManager(userId),
-		onSuccess: (updatedUser) => {
-			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-			toast.success(`${updatedUser.name} demoted to Manager`);
-			setConfirmAction(null);
-			onRoleChange?.();
-		},
-		onError: (error: any) => {
-			toast.error(error.message);
-		},
-	});
-
-	const demoteManagerMutation = useMutation({
-		mutationFn: (userId: string) => demoteManagerToUser(userId),
-		onSuccess: (updatedUser) => {
-			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-			toast.success(`${updatedUser.name} demoted to User`);
-			setConfirmAction(null);
-			onRoleChange?.();
-		},
-		onError: (error: any) => {
-			toast.error(error.message);
-		},
-	});
-
-	const updatePermsMutation = useMutation({
-		mutationFn: ({
-			userId,
-			key,
-			value,
-		}: {
-			userId: string;
-			key: string;
-			value: boolean;
-		}) =>
-			updateCategoryPermissions(userId, {
-				[key]: value,
-			} as any),
-		onSuccess: (_data, variables) => {
-			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-			const action = variables.value ? "enabled" : "disabled";
-			toast.success(
-				`${variables.key.charAt(0).toUpperCase() + variables.key.slice(1)} permission ${action}`,
-			);
-		},
-		onError: (error: any) => {
-			toast.error(error.message);
-		},
-	});
-
-	// Filter and search
 	const filteredUsers = useMemo(() => {
-		return users.filter((user) => {
+		return users.filter((user: any) => {
 			const matchesRole =
 				roleFilter === "all" ||
-				user.role === roleFilter ||
-				(roleFilter === "users" && user.role === "user") || // ← fix
-				(roleFilter === "managers" && user.role === "manager") || // ← fix
+				(roleFilter === "users" && user.role === "user") ||
+				(roleFilter === "managers" && user.role === "manager") ||
 				(roleFilter === "admins" &&
 					(user.role === "admin" || user.role === "super_admin"));
 			const matchesSearch =
-				searchQuery === "" ||
+				!searchQuery ||
 				user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				user.email.toLowerCase().includes(searchQuery.toLowerCase());
 			return matchesRole && matchesSearch;
 		});
 	}, [users, roleFilter, searchQuery]);
 
-	const canShowSuperAdminTab = currentUser?.isSuperAdmin;
-
-	const getRoleButtons = (user: any) => {
-		if (user.isSuperAdmin) {
-			return null;
-		}
-
-		const buttons = [];
-
-		if (user.role === "user") {
-			buttons.push(
-				<Button
-					key="manager"
-					size="sm"
-					variant="outline"
-					onClick={() =>
-						setConfirmAction({ type: "make-manager", user })
-					}
-					className="text-blue-600 border-blue-200 hover:bg-blue-50"
-				>
-					<UserCheck className="w-4 h-4 mr-1" />
-					Make Manager
-				</Button>,
-			);
-		}
-
-		if (user.role === "manager") {
-			if (currentUser?.isSuperAdmin) {
-				buttons.push(
-					<Button
-						key="admin"
-						size="sm"
-						variant="outline"
-						onClick={() =>
-							setConfirmAction({ type: "make-admin", user })
-						}
-						className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-					>
-						<ShieldPlus className="w-4 h-4 mr-1" />
-						Make Admin
-					</Button>,
-				);
-			}
-
-			if (currentUser?.role === "admin" || currentUser?.isSuperAdmin) {
-				buttons.push(
-					<Button
-						key="user"
-						size="sm"
-						variant="ghost"
-						onClick={() =>
-							setConfirmAction({ type: "demote-user", user })
-						}
-						className="text-red-600 hover:bg-red-50"
-					>
-						<UserMinus className="w-4 h-4 mr-1" />
-						Demote
-					</Button>,
-				);
-			}
-		}
-
-		if (user.role === "admin" && currentUser?.isSuperAdmin) {
-			buttons.push(
-				<Button
-					key="manager"
-					size="sm"
-					variant="outline"
-					onClick={() =>
-						setConfirmAction({ type: "demote-manager", user })
-					}
-					className="text-amber-600 border-amber-200 hover:bg-amber-50"
-				>
-					<ShieldMinus className="w-4 h-4 mr-1" />
-					Demote
-				</Button>,
-			);
-		}
-
-		return buttons.length > 0 ? buttons : null;
-	};
+	const FILTERS = [
+		{ id: "all", label: "All" },
+		{ id: "users", label: "Users" },
+		{ id: "managers", label: "Managers" },
+		{ id: "admins", label: "Admins" },
+	];
 
 	return (
 		<div className="space-y-4">
 			{/* Filter Bar */}
-			<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-				<div className="flex gap-2 flex-wrap">
-					{[
-						"all",
-						"users",
-						"managers",
-						"admins",
-						...(canShowSuperAdminTab ? ["super_admin"] : []),
-					].map((role) => (
-						<Button
-							key={role}
-							size="sm"
-							variant={
-								roleFilter === role ? "default" : "outline"
-							}
-							onClick={() => setRoleFilter(role)}
+			<div className="flex flex-col sm:flex-row gap-3">
+				<div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 overflow-x-auto">
+					{FILTERS.map(({ id, label }) => (
+						<button
+							key={id}
+							onClick={() => setRoleFilter(id)}
+							className="relative flex-shrink-0 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
 						>
-							{role === "all"
-								? "All"
-								: role === "users"
-									? "Users"
-									: role === "managers"
-										? "Managers"
-										: role === "admins"
-											? "Admins"
-											: "Super Admin"}
-						</Button>
+							{roleFilter === id && (
+								<motion.div
+									layoutId="userFilterBg"
+									className="absolute inset-0 bg-indigo-600 rounded-lg"
+									transition={{
+										type: "spring",
+										stiffness: 400,
+										damping: 35,
+									}}
+								/>
+							)}
+							<span
+								className={`relative z-10 ${roleFilter === id ? "text-white" : "text-zinc-400 hover:text-zinc-300"}`}
+							>
+								{label}
+							</span>
+						</button>
 					))}
 				</div>
 
-				<div className="relative">
-					<Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
+				<div className="relative flex-1">
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
 					<Input
 						placeholder="Search by name or email..."
-						className="pl-8"
+						className="pl-10 bg-[#1C1F2A] border-zinc-700/60 text-white"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
 				</div>
 			</div>
 
-			{/* User Table */}
-			<div className="border rounded-lg overflow-hidden">
-				<Table>
-					<TableHeader className="bg-muted/50">
-						<TableRow>
-							<TableHead>User Info</TableHead>
-							<TableHead>Role</TableHead>
-							<TableHead>Category Permissions</TableHead>
-							<TableHead className="text-right">
-								Actions
-							</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoadingUsers ? (
-							<UserTableSkeleton />
-						) : filteredUsers.length === 0 ? (
-							<TableRow>
-								<TableCell
-									colSpan={4}
-									className="text-center py-8 text-muted-foreground"
-								>
-									No users found
-								</TableCell>
-							</TableRow>
-						) : (
-							filteredUsers.map((user) => (
-								<TableRow
-									key={user.id}
-									className="hover:bg-muted/50"
-								>
-									{/* User Info */}
-									<TableCell>
-										<div className="flex items-center gap-3">
-											<UserAvatar
-												name={user.name}
-												role={user.role}
-											/>
-											<div>
-												<div className="font-semibold">
-													{user.name}
-												</div>
-												<div className="text-sm text-muted-foreground">
-													{user.email}
-												</div>
-											</div>
-										</div>
-									</TableCell>
+			{/* User List */}
+			{isLoadingUsers ? (
+				<div className="space-y-3">
+					{Array.from({ length: 5 }).map((_, i) => (
+						<div
+							key={i}
+							className="bg-[#13161F] border border-white/10 rounded-xl p-4 animate-pulse"
+						>
+							<div className="flex items-center gap-3">
+								<div className="w-9 h-9 rounded-full bg-white/10" />
+								<div className="flex-1 space-y-2">
+									<div className="h-4 w-32 bg-white/10 rounded" />
+									<div className="h-3 w-48 bg-white/10 rounded" />
+								</div>
+							</div>
+						</div>
+					))}
+				</div>
+			) : filteredUsers.length === 0 ? (
+				<div className="text-center py-12 text-zinc-500">
+					No users found
+				</div>
+			) : (
+				<div className="space-y-2">
+					{filteredUsers.map((user: any) => (
+						<UserRow
+							key={user.id}
+							user={user}
+							currentUser={currentUser}
+							onAction={(type: string, u: any) =>
+								setConfirmAction({ type, user: u })
+							}
+							onViewHistory={setRoleHistoryUser}
+						/>
+					))}
+				</div>
+			)}
 
-									{/* Role */}
-									<TableCell>
-										<RoleBadge role={user.role} />
-									</TableCell>
-
-									{/* Category Permissions */}
-									<TableCell>
-										{user.role === "manager" ? (
-											<div className="flex gap-4">
-												{[
-													"canCreate",
-													"canUpdate",
-													"canDelete",
-												].map((perm) => (
-													<div
-														key={perm}
-														className="flex items-center gap-2"
-													>
-														<Switch
-															checked={
-																user
-																	.categoryPermissions?.[
-																	perm as keyof typeof user.categoryPermissions
-																] || false
-															}
-															onCheckedChange={(
-																checked,
-															) => {
-																updatePermsMutation.mutate(
-																	{
-																		userId: user.id,
-																		key: perm,
-																		value: checked,
-																	},
-																);
-															}}
-															disabled={
-																updatePermsMutation.isPending
-															}
-														/>
-														{updatePermsMutation.isPending &&
-															updatePermsMutation
-																.variables
-																?.key ===
-																perm && (
-																<Loader2 className="w-3 h-3 animate-spin" />
-															)}
-													</div>
-												))}
-											</div>
-										) : (
-											<span className="text-muted-foreground">
-												—
-											</span>
-										)}
-									</TableCell>
-
-									{/* Actions */}
-									<TableCell className="text-right">
-										<div className="flex gap-2 justify-end flex-wrap">
-											{user.isSuperAdmin ? (
-												<Lock
-													className="w-5 h-5 text-yellow-600"
-													title="Super Admin cannot be modified"
-												/>
-											) : (
-												getRoleButtons(user)
-											)}
-
-											{!user.isSuperAdmin &&
-												user.roleHistory?.length >
-													0 && (
-													<Button
-														size="sm"
-														variant="ghost"
-														onClick={() =>
-															setRoleHistoryUser(
-																user,
-															)
-														}
-													>
-														<Clock className="w-4 h-4" />
-													</Button>
-												)}
-										</div>
-									</TableCell>
-								</TableRow>
-							))
-						)}
-					</TableBody>
-				</Table>
-			</div>
-
-			{/* Confirmation Dialogs */}
+			{/* Confirm Dialog */}
 			<AlertDialog
-				open={confirmAction !== null}
+				open={!!confirmAction}
 				onOpenChange={(open) => !open && setConfirmAction(null)}
 			>
-				<AlertDialogContent>
+				<AlertDialogContent className="bg-[#13161F] border border-white/10 text-white">
 					<AlertDialogHeader>
 						<AlertDialogTitle>
 							{confirmAction?.type === "make-manager" &&
@@ -570,86 +510,68 @@ function UserManagement({
 							{confirmAction?.type === "demote-user" &&
 								"Demote to User?"}
 						</AlertDialogTitle>
-						<AlertDialogDescription>
+						<AlertDialogDescription className="text-zinc-400">
 							{confirmAction?.type === "make-manager" &&
-								`${confirmAction.user.name} will gain access to: Orders, Restock Queue, and Activity Log.`}
+								`${confirmAction.user.name} will gain access to Orders, Restock Queue, and Activity Log.`}
 							{confirmAction?.type === "make-admin" &&
-								`${confirmAction.user.name} will gain full system access including this Admin Panel. This action is only available to Super Admin.`}
+								`${confirmAction.user.name} will gain full system access including the Admin Panel.`}
 							{confirmAction?.type === "demote-manager" &&
-								`${confirmAction.user.name} will lose Admin Panel access and all admin privileges.`}
+								`${confirmAction.user.name} will lose Admin Panel access and admin privileges.`}
 							{confirmAction?.type === "demote-user" &&
-								`${confirmAction.user.name} will lose access to Orders, Restock Queue, Activity Log, and all category permissions.`}
+								`${confirmAction.user.name} will lose access to Orders, Restock, Activity Log, and category permissions.`}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={() => {
-							if (confirmAction?.type === "make-manager") {
-								promoteToManagerMutation.mutate(
-									confirmAction.user.id,
-								);
-							} else if (confirmAction?.type === "make-admin") {
-								promoteToAdminMutation.mutate(
-									confirmAction.user.id,
-								);
-							} else if (
-								confirmAction?.type === "demote-manager"
-							) {
-								demoteAdminMutation.mutate(
-									confirmAction.user.id,
-								);
-							} else if (confirmAction?.type === "demote-user") {
-								demoteManagerMutation.mutate(
-									confirmAction.user.id,
-								);
+					<div className="flex justify-end gap-2 mt-2">
+						<AlertDialogCancel className="border-zinc-700 text-zinc-300">
+							Cancel
+						</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() =>
+								confirmAction &&
+								promoteMutation.mutate({
+									type: confirmAction.type,
+									userId: confirmAction.user.id,
+								})
 							}
-						}}
-						disabled={
-							promoteToManagerMutation.isPending ||
-							promoteToAdminMutation.isPending ||
-							demoteAdminMutation.isPending ||
-							demoteManagerMutation.isPending
-						}
-					>
-						{(promoteToManagerMutation.isPending ||
-							promoteToAdminMutation.isPending ||
-							demoteAdminMutation.isPending ||
-							demoteManagerMutation.isPending) && (
-							<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-						)}
-						Confirm
-					</AlertDialogAction>
+							disabled={promoteMutation.isPending}
+							className="bg-indigo-600 hover:bg-indigo-500"
+						>
+							{promoteMutation.isPending && (
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+							)}
+							Confirm
+						</AlertDialogAction>
+					</div>
 				</AlertDialogContent>
 			</AlertDialog>
 
 			{/* Role History Sheet */}
 			<Sheet
-				open={roleHistoryUser !== null}
+				open={!!roleHistoryUser}
 				onOpenChange={(open) => !open && setRoleHistoryUser(null)}
 			>
-				<SheetContent className="w-full sm:max-w-md">
+				<SheetContent className="bg-[#0a0d12] border-l border-white/10 text-white w-full sm:max-w-md">
 					<SheetHeader>
-						<SheetTitle>
+						<SheetTitle className="text-white">
 							{roleHistoryUser?.name}&apos;s Role History
 						</SheetTitle>
-						<SheetDescription>
+						<SheetDescription className="text-zinc-400">
 							All role changes for this user
 						</SheetDescription>
 					</SheetHeader>
-
-					<div className="mt-4 space-y-4">
+					<div className="mt-6 space-y-4">
 						{roleHistoryUser?.roleHistory?.length === 0 ? (
-							<p className="text-muted-foreground text-sm">
-								No role changes recorded
+							<p className="text-zinc-500 text-sm">
+								No role changes recorded.
 							</p>
 						) : (
 							roleHistoryUser?.roleHistory?.map(
 								(entry: any, idx: number) => (
 									<div
 										key={idx}
-										className="pb-4 border-b last:border-b-0"
+										className="pb-4 border-b border-white/5 last:border-b-0"
 									>
-										<div className="text-xs text-muted-foreground">
+										<p className="text-xs text-zinc-500">
 											{new Date(
 												entry.changedAt,
 											).toLocaleDateString("en-US", {
@@ -664,16 +586,16 @@ function UserManagement({
 												hour: "2-digit",
 												minute: "2-digit",
 											})}
-										</div>
-										<div className="text-sm font-medium mt-1">
+										</p>
+										<p className="text-sm font-medium text-white mt-1">
 											{entry.fromRole.toUpperCase()} →{" "}
 											{entry.toRole.toUpperCase()}
-										</div>
+										</p>
 										{entry.changedBy && (
-											<div className="text-xs text-muted-foreground mt-1">
+											<p className="text-xs text-zinc-500 mt-0.5">
 												Changed by:{" "}
 												{entry.changedBy.name}
-											</div>
+											</p>
 										)}
 									</div>
 								),
@@ -686,59 +608,44 @@ function UserManagement({
 	);
 }
 
-// ─────────────────────────────────────────────────────────────
-// TAB 2: PENDING APPROVALS
-// ─────────────────────────────────────────────────────────────
-
-interface PendingApprovalsProps {
-	isLoadingProducts: boolean;
-	products: any[];
-	totalPending: number;
-}
-
-function PendingApprovals({
-	isLoadingProducts,
-	products,
-	totalPending,
-}: PendingApprovalsProps) {
-	const [selectedProduct, setSelectedProduct] = useState<any>(null);
+// ─── Pending Approvals Tab ────────────────────────────────────────────────────
+function PendingApprovals({ isLoadingProducts, products, totalPending }: any) {
 	const [confirmApprove, setConfirmApprove] = useState<any>(null);
 	const [rejectDialog, setRejectDialog] = useState<any>(null);
 	const [rejectReason, setRejectReason] = useState("");
 	const queryClient = useQueryClient();
 
 	const approveMutation = useMutation({
-		mutationFn: (productId: string) => approveProduct(productId),
-		onSuccess: () => {
+		mutationFn: (id: string) => approveProduct(id),
+		onSuccess: (_data, id) => {
 			queryClient.invalidateQueries({ queryKey: ["pending-products"] });
-			toast.success("✅ Product approved!");
+			queryClient.invalidateQueries({ queryKey: ["products"] });
+			toast.success("✅ Product approved and is now live!");
 			setConfirmApprove(null);
 		},
-		onError: (error: any) => {
-			toast.error(error.message);
-		},
+		onError: (error: any) => toast.error(error.message),
 	});
 
 	const rejectMutation = useMutation({
-		mutationFn: (productId: string) =>
-			rejectProduct(productId, { reason: rejectReason }),
+		mutationFn: (id: string) => rejectProduct(id, { reason: rejectReason }),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["pending-products"] });
-			toast.success("Product rejected");
+			queryClient.invalidateQueries({ queryKey: ["products"] });
+			toast.success("Product rejected. The submitter has been notified.");
 			setRejectDialog(null);
 			setRejectReason("");
 		},
-		onError: (error: any) => {
-			toast.error(error.message);
-		},
+		onError: (error: any) => toast.error(error.message),
 	});
 
-	if (totalPending === 0 && !isLoadingProducts) {
+	if (!isLoadingProducts && totalPending === 0) {
 		return (
-			<div className="flex flex-col items-center justify-center py-16">
-				<CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-				<h3 className="text-lg font-semibold">All caught up!</h3>
-				<p className="text-muted-foreground">
+			<div className="flex flex-col items-center justify-center py-20 text-center">
+				<CheckCircle className="w-14 h-14 text-green-400 mb-4" />
+				<h3 className="text-lg font-semibold text-white mb-1">
+					All caught up!
+				</h3>
+				<p className="text-zinc-400 text-sm">
 					No products are awaiting approval.
 				</p>
 			</div>
@@ -747,206 +654,221 @@ function PendingApprovals({
 
 	return (
 		<div className="space-y-4">
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				{isLoadingProducts ? (
-					[...Array(4)].map((_, i) => (
-						<ApprovalCardSkeleton key={i} />
-					))
-				) : products.length === 0 ? (
-					<div className="col-span-full text-center py-8 text-muted-foreground">
-						No pending products
-					</div>
-				) : (
+			{isLoadingProducts ? (
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+					{Array.from({ length: 4 }).map((_, i) => (
+						<div
+							key={i}
+							className="bg-[#13161F] border border-white/10 rounded-xl p-5 animate-pulse h-64"
+						/>
+					))}
+				</div>
+			) : (
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<AnimatePresence>
-						{products.map((product) => (
+						{products.map((product: any) => (
 							<motion.div
-								key={product.id}
-								initial={{ opacity: 1, scale: 1 }}
+								key={product._id || product.id}
+								initial={{ opacity: 0, scale: 0.97 }}
+								animate={{ opacity: 1, scale: 1 }}
 								exit={{ opacity: 0, scale: 0.95 }}
 								transition={{ duration: 0.2 }}
+								className="bg-[#13161F] border border-amber-500/20 rounded-xl p-5 space-y-4"
 							>
-								<div className="rounded-lg border border-border bg-card p-6 hover:shadow-md transition-shadow">
-									<div className="flex justify-between items-start mb-4">
-										<h3 className="font-semibold text-lg">
-											{product.name}
-										</h3>
-										<Badge variant="secondary">
-											⏳ Pending
-										</Badge>
-									</div>
+								{/* Header */}
+								<div className="flex justify-between items-start gap-2">
+									<h3 className="text-white font-semibold truncate">
+										{product.name}
+									</h3>
+									<span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex-shrink-0">
+										<Clock className="w-3 h-3" /> Pending
+									</span>
+								</div>
 
-									<div className="space-y-2 mb-4 text-sm">
-										<div>
-											<span className="text-muted-foreground">
-												Category:{" "}
-											</span>
-											<span className="font-medium">
-												{product.category.name}
-											</span>
-										</div>
-										<div>
-											<span className="text-muted-foreground">
-												Price:{" "}
-											</span>
-											<span className="font-medium">
-												${product.price.toFixed(2)}
-											</span>
-											<span className="text-muted-foreground ml-4">
-												Stock: {product.stock} units
-											</span>
-										</div>
-										<div>
-											<span className="text-muted-foreground">
-												Min Threshold:{" "}
-											</span>
-											<span className="font-medium">
-												{product.minStockThreshold}{" "}
-												units
-											</span>
-										</div>
+								{/* Details */}
+								<div className="space-y-1.5 text-sm">
+									<div className="flex justify-between">
+										<span className="text-zinc-500">
+											Category
+										</span>
+										<span className="text-zinc-300">
+											{product.category?.name ||
+												product.category}
+										</span>
 									</div>
+									<div className="flex justify-between">
+										<span className="text-zinc-500">
+											Price
+										</span>
+										<span className="text-white font-medium">
+											${product.price?.toFixed(2)}
+										</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-zinc-500">
+											Stock
+										</span>
+										<span className="text-zinc-300">
+											{product.stock} units
+										</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-zinc-500">
+											Min Threshold
+										</span>
+										<span className="text-zinc-300">
+											{product.minStockThreshold} units
+										</span>
+									</div>
+								</div>
 
-									<div className="bg-muted/50 rounded p-3 mb-4 text-sm">
-										<div className="font-medium mb-1">
-											Submitted by:
+								{/* Submitted By */}
+								{product.createdBy && (
+									<div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/5">
+										<div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+											{product.createdBy.name
+												?.split(" ")
+												.map((n: string) => n[0])
+												.join("")
+												.toUpperCase()
+												.slice(0, 2)}
 										</div>
-										<div className="flex items-center gap-2">
-											<div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold">
-												{product.createdBy.name
-													.split(" ")
-													.map((n: string) => n[0])
-													.join("")
-													.toUpperCase()
-													.slice(0, 2)}
-											</div>
-											<div>
-												<div className="font-medium">
-													{product.createdBy.name}
-												</div>
-												<div className="text-xs text-muted-foreground">
-													{product.createdBy.role} ·{" "}
-													{new Date(
-														product.createdAt,
-													).toLocaleDateString(
-														"en-US",
-														{
-															month: "short",
-															day: "numeric",
-															year: "numeric",
-														},
-													)}
-												</div>
-											</div>
+										<div className="flex-1 min-w-0">
+											<p className="text-white text-sm font-medium truncate">
+												{product.createdBy.name}
+											</p>
+											<p className="text-zinc-500 text-xs capitalize">
+												{product.createdBy.role} ·{" "}
+												{new Date(
+													product.createdAt,
+												).toLocaleDateString("en-US", {
+													month: "short",
+													day: "numeric",
+													year: "numeric",
+												})}
+											</p>
 										</div>
 									</div>
+								)}
 
-									<div className="flex gap-2">
-										<Button
-											className="flex-1 bg-green-600 hover:bg-green-700"
-											onClick={() =>
-												setConfirmApprove(product)
-											}
-										>
-											✅ Approve
-										</Button>
-										<Button
-											variant="destructive"
-											className="flex-1"
-											onClick={() =>
-												setRejectDialog(product)
-											}
-										>
-											❌ Reject
-										</Button>
-									</div>
+								{/* Actions */}
+								<div className="flex gap-2">
+									<button
+										onClick={() =>
+											setConfirmApprove(product)
+										}
+										className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 text-sm font-medium transition"
+									>
+										<CheckCircle className="w-4 h-4" />{" "}
+										Approve
+									</button>
+									<button
+										onClick={() => setRejectDialog(product)}
+										className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 text-sm font-medium transition"
+									>
+										❌ Reject
+									</button>
 								</div>
 							</motion.div>
 						))}
 					</AnimatePresence>
-				)}
-			</div>
+				</div>
+			)}
 
-			{/* Approve Dialog */}
+			{/* Approve Confirm */}
 			<AlertDialog
-				open={confirmApprove !== null}
+				open={!!confirmApprove}
 				onOpenChange={(open) => !open && setConfirmApprove(null)}
 			>
-				<AlertDialogContent>
+				<AlertDialogContent className="bg-[#13161F] border border-white/10 text-white w-[calc(100%-2rem)] sm:max-w-md rounded-xl mx-auto">
 					<AlertDialogHeader>
 						<AlertDialogTitle>
-							Approve &quot;{confirmApprove?.name}&quot;?
+							Approve &apos;{confirmApprove?.name}&apos;?
 						</AlertDialogTitle>
-						<AlertDialogDescription>
-							It will become visible to all users.
+						<AlertDialogDescription className="text-zinc-400">
+							This product will become visible to all users
+							immediately.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={() =>
-							approveMutation.mutate(confirmApprove.id)
-						}
-						disabled={approveMutation.isPending}
-					>
-						{approveMutation.isPending && (
-							<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-						)}
-						Approve
-					</AlertDialogAction>
+					<div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-2">
+						<AlertDialogCancel className="border-zinc-700 text-zinc-300 w-full sm:w-auto">
+							Cancel
+						</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() =>
+								approveMutation.mutate(
+									confirmApprove._id || confirmApprove.id,
+								)
+							}
+							disabled={approveMutation.isPending}
+							className="bg-green-600 hover:bg-green-500 w-full sm:w-auto"
+						>
+							{approveMutation.isPending && (
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+							)}
+							Approve
+						</AlertDialogAction>
+					</div>
 				</AlertDialogContent>
 			</AlertDialog>
 
 			{/* Reject Dialog */}
 			<Dialog
-				open={rejectDialog !== null}
-				onOpenChange={(open) => !open && setRejectDialog(null)}
+				open={!!rejectDialog}
+				onOpenChange={(open) => {
+					if (!open) {
+						setRejectDialog(null);
+						setRejectReason("");
+					}
+				}}
 			>
-				<DialogContent>
+				<DialogContent className="bg-[#13161F] border border-white/10 text-white w-[calc(100%-2rem)] sm:max-w-md rounded-xl mx-auto">
 					<DialogHeader>
 						<DialogTitle>Reject Product</DialogTitle>
-						<DialogDescription>
+						<DialogDescription className="text-zinc-400">
 							{rejectDialog?.name}
 						</DialogDescription>
 					</DialogHeader>
-
-					<div className="space-y-4">
-						<div>
-							<label className="text-sm font-medium">
-								Reason for rejection
-							</label>
-							<Textarea
-								placeholder="Provide a reason (minimum 10 characters)..."
-								value={rejectReason}
-								onChange={(e) =>
-									setRejectReason(e.target.value)
-								}
-								className="mt-2"
-								rows={4}
-							/>
-							<div className="text-xs text-muted-foreground mt-1">
-								{rejectReason.length} characters
-							</div>
-						</div>
+					<div className="space-y-2">
+						<label className="text-sm text-zinc-300 font-medium">
+							Reason for rejection
+						</label>
+						<Textarea
+							placeholder="Provide a clear reason (minimum 10 characters)..."
+							value={rejectReason}
+							onChange={(e) => setRejectReason(e.target.value)}
+							className="bg-[#1C1F2A] border-zinc-700/60 text-white"
+							rows={4}
+						/>
+						<p
+							className={`text-xs ${rejectReason.length < 10 ? "text-zinc-600" : "text-green-400"}`}
+						>
+							{rejectReason.length} / 10 characters minimum
+						</p>
 					</div>
-
-					<DialogFooter>
+					<DialogFooter className="flex-col-reverse sm:flex-row gap-2">
 						<Button
 							variant="outline"
 							onClick={() => {
 								setRejectDialog(null);
 								setRejectReason("");
 							}}
+							className="border-zinc-700 text-zinc-300 w-full sm:w-auto"
 						>
 							Cancel
 						</Button>
 						<Button
 							variant="destructive"
 							onClick={() =>
-								rejectMutation.mutate(rejectDialog.id)
+								rejectMutation.mutate(
+									rejectDialog._id || rejectDialog.id,
+								)
 							}
 							disabled={
 								rejectReason.length < 10 ||
 								rejectMutation.isPending
 							}
+							className="w-full sm:w-auto"
 						>
 							{rejectMutation.isPending && (
 								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -960,22 +882,15 @@ function PendingApprovals({
 	);
 }
 
-// ─────────────────────────────────────────────────────────────
-// MAIN PAGE
-// ─────────────────────────────────────────────────────────────
-
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AdminPanel() {
 	const { user: currentUser } = useAuthStore();
 	const queryClient = useQueryClient();
+	const [activeTab, setActiveTab] = useState("users");
 
-	// Queries
 	const { data: usersData, isLoading: isLoadingUsers } = useQuery({
 		queryKey: ["admin-users"],
-		queryFn: () =>
-			getUsers({
-				page: 1,
-				limit: 100,
-			}),
+		queryFn: () => getUsers({ page: 1, limit: 100 }),
 		enabled: !!currentUser,
 	});
 
@@ -988,80 +903,109 @@ export default function AdminPanel() {
 
 	const isSuperAdmin = currentUser?.isSuperAdmin;
 	const isAdmin = currentUser?.role === "admin" || currentUser?.isSuperAdmin;
+	const pendingCount = productsData?.total || 0;
 
 	if (!isAdmin) {
 		return (
-			<div className="flex items-center justify-center h-screen">
-				<div className="text-center">
-					<h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-					<p className="text-muted-foreground">
-						You don&apos;t have permission to access this page.
-					</p>
-				</div>
+			<div className="flex flex-col items-center justify-center py-24 text-center">
+				<AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
+				<h1 className="text-xl font-bold text-white mb-2">
+					Access Denied
+				</h1>
+				<p className="text-zinc-400 text-sm">
+					You don&apos;t have permission to access this page.
+				</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="space-y-6">
-			{/* Header */}
-			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-				<div className="flex items-center gap-2">
-					<h1 className="text-3xl font-bold">Admin Panel</h1>
-					{isSuperAdmin ? (
-						<Badge className="bg-yellow-100 text-yellow-900 border-yellow-300">
-							👑 Super Admin
-						</Badge>
-					) : (
-						<Badge className="bg-indigo-100 text-indigo-900 border-indigo-300">
-							🛡️ Admin
-						</Badge>
-					)}
-				</div>
-				<div className="text-muted-foreground text-sm">
-					{usersData?.total || 0} users total
+		<>
+			<PageHeader
+				title="Admin Panel"
+				subtitle={`${usersData?.total || 0} total users`}
+				action={
+					<span
+						className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${
+							isSuperAdmin
+								? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+								: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"
+						}`}
+					>
+						{isSuperAdmin ? "👑 Super Admin" : "🛡️ Admin"}
+					</span>
+				}
+			/>
+
+			{/* Sliding Tabs */}
+			<div className="relative mb-6">
+				<div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+					{TABS.map(({ id, label, icon: Icon }) => (
+						<button
+							key={id}
+							onClick={() => setActiveTab(id)}
+							className="relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors"
+						>
+							{activeTab === id && (
+								<motion.div
+									layoutId="adminTabBg"
+									className="absolute inset-0 bg-indigo-600 rounded-lg"
+									transition={{
+										type: "spring",
+										stiffness: 400,
+										damping: 35,
+									}}
+								/>
+							)}
+							<Icon
+								className={`relative z-10 w-4 h-4 transition-colors ${activeTab === id ? "text-white" : "text-zinc-400"}`}
+							/>
+							<span
+								className={`relative z-10 transition-colors ${activeTab === id ? "text-white" : "text-zinc-400 hover:text-zinc-300"}`}
+							>
+								{label}
+							</span>
+							{id === "approvals" && pendingCount > 0 && (
+								<span className="relative z-10 flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
+									{pendingCount}
+								</span>
+							)}
+						</button>
+					))}
 				</div>
 			</div>
 
-			{/* Tabs */}
-			<Tabs defaultValue="users" className="w-full">
-				<TabsList>
-					<TabsTrigger value="users">User Management</TabsTrigger>
-					<TabsTrigger value="approvals" className="relative">
-						Pending Approvals
-						{productsData?.total > 0 && (
-							<Badge
-								variant="destructive"
-								className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
-							>
-								{productsData.total}
-							</Badge>
-						)}
-					</TabsTrigger>
-				</TabsList>
-
-				<TabsContent value="users" className="mt-6">
-					<UserManagement
-						currentUser={currentUser}
-						isLoadingUsers={isLoadingUsers}
-						users={usersData?.users || []}
-						totalUsers={usersData?.total || 0}
-						onRoleChange={() => {
-							queryClient.invalidateQueries({
-								queryKey: ["admin-users"],
-							});
-						}}
-					/>
-				</TabsContent>
-
-				<TabsContent value="approvals" className="mt-6">
-					<PendingApprovals
-						isLoadingProducts={isLoadingProducts}
-						products={productsData?.products || []}
-						totalPending={productsData?.total || 0}
-					/>
-				</TabsContent>
-			</Tabs>
-		</div>
+			{/* Tab Content */}
+			<AnimatePresence mode="wait">
+				<motion.div
+					key={activeTab}
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					exit={{ opacity: 0, y: -8 }}
+					transition={{ duration: 0.2 }}
+				>
+					{activeTab === "users" && (
+						<UserManagement
+							currentUser={currentUser}
+							isLoadingUsers={isLoadingUsers}
+							users={usersData?.users || []}
+							totalUsers={usersData?.total || 0}
+							onRoleChange={() =>
+								queryClient.invalidateQueries({
+									queryKey: ["admin-users"],
+								})
+							}
+						/>
+					)}
+					{activeTab === "approvals" && (
+						<PendingApprovals
+							isLoadingProducts={isLoadingProducts}
+							products={productsData?.products || []}
+							totalPending={pendingCount}
+						/>
+					)}
+				</motion.div>
+			</AnimatePresence>
+		</>
 	);
 }
