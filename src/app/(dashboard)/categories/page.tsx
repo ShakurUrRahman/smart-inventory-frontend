@@ -52,8 +52,9 @@ export default function CategoriesPage() {
 		mutationFn: (data: { name: string }) =>
 			categoriesApi.createCategory(data),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["categories"] });
 			setAddDialogOpen(false);
+			queryClient.invalidateQueries({ queryKey: ["categories"] });
+
 			toast.success("Category created successfully!");
 		},
 		onError: (error: Error) => toast.error(error.message),
