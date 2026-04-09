@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, X, Trash2, Plus } from "lucide-react";
+import { Loader2, X, Trash2, Plus, ShoppingCart } from "lucide-react";
 import {
 	Sheet,
 	SheetContent,
@@ -19,6 +19,13 @@ import { Product } from "@/lib/productsApi";
 import { Category } from "@/lib/categoriesApi";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+	Drawer,
+	DrawerBody,
+	DrawerClose,
+	DrawerFooter,
+	DrawerHeader,
+} from "../shared/SheetDrawer";
 
 const orderSchema = z.object({
 	customerName: z
@@ -74,7 +81,11 @@ export default function CreateOrderDrawer({
 		},
 	});
 
-	const { fields, append, remove } = useFieldArray({
+	const {
+		fields: fieldArr,
+		append,
+		remove,
+	} = useFieldArray({
 		control,
 		name: "items",
 	});
@@ -187,28 +198,32 @@ export default function CreateOrderDrawer({
 	const canSubmit = isValid && items.length > 0 && !isLoading;
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent
-				className={cn(
-					"w-full sm:max-w-xl overflow-y-auto bg-[#0a0d12] border-l border-white/10",
-					"transition-transform duration-300 ease-in-out",
-				)}
-			>
-				<SheetHeader className="pb-4 border-b border-white/10">
-					<SheetTitle className="text-white text-lg">
-						Create Order
-					</SheetTitle>
-					<SheetDescription className="text-zinc-400 text-sm">
-						Add products and customer information to create a new
-						order
-					</SheetDescription>
-				</SheetHeader>
+		<Drawer open={open} onOpenChange={onOpenChange}>
+			<DrawerClose onClose={() => onOpenChange(false)} />
 
+			<DrawerHeader>
+				<div className="flex items-center gap-3">
+					<div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+						<ShoppingCart className="w-4 h-4 text-indigo-400" />
+					</div>
+					<div>
+						<h2 className="text-white font-semibold text-lg">
+							Create Order
+						</h2>
+						<p className="text-zinc-400 text-sm">
+							Add products and customer info
+						</p>
+					</div>
+				</div>
+			</DrawerHeader>
+
+			<DrawerBody>
 				<form
+					id="create-order-form"
 					onSubmit={handleSubmit(handleFormSubmit)}
-					className="space-y-5 mt-5"
+					className="space-y-5"
 				>
-					{/* SECTION 1: Customer Name */}
+					{/* Customer Name */}
 					<div className="space-y-2 pb-5 border-b border-white/10">
 						<Label
 							htmlFor="customerName"
@@ -230,19 +245,17 @@ export default function CreateOrderDrawer({
 						)}
 					</div>
 
-					{/* SECTION 2: Add Products */}
+					{/* Add Products */}
 					<div className="space-y-2 pb-5 border-b border-white/10">
 						<Label className="text-zinc-300 text-sm">
 							Add Products
 						</Label>
-						<div className="w-full">
-							<ProductSelect
-								products={products}
-								selectedProducts={selectedProducts}
-								onSelect={handleAddProduct}
-								disabled={isLoading}
-							/>
-						</div>
+						<ProductSelect
+							products={products}
+							selectedProducts={selectedProducts}
+							onSelect={handleAddProduct}
+							disabled={isLoading}
+						/>
 						{inlineErrors["product-select"] && (
 							<p className="text-red-400 text-xs">
 								{inlineErrors["product-select"]}
@@ -250,14 +263,14 @@ export default function CreateOrderDrawer({
 						)}
 					</div>
 
-					{/* SECTION 3: Item List */}
-					{fields.length > 0 && (
+					{/* Order Items */}
+					{fieldArr.length > 0 && (
 						<div className="space-y-2 pb-5 border-b border-white/10">
 							<Label className="text-zinc-300 text-sm">
 								Order Items
 							</Label>
 							<div className="space-y-2">
-								{fields.map((field, index) => {
+								{fieldArr.map((field, index) => {
 									const product = products.find(
 										(p) =>
 											p._id === items[index]?.productId,
@@ -321,48 +334,44 @@ export default function CreateOrderDrawer({
 					)}
 
 					{/* Total */}
-					{fields.length > 0 && (
-						<div className="pb-5 border-b border-white/10">
-							<div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-4 py-3">
-								<p className="text-zinc-400 text-sm">
-									Order Total
-								</p>
-								<p className="text-2xl sm:text-3xl font-bold text-white">
-									${totalPrice.toFixed(2)}
-								</p>
-							</div>
+					{fieldArr.length > 0 && (
+						<div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+							<p className="text-zinc-400 text-sm">Order Total</p>
+							<p className="text-2xl font-bold text-white">
+								${totalPrice.toFixed(2)}
+							</p>
 						</div>
 					)}
-
-					{/* Submit */}
-					<div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-1 pb-6">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => onOpenChange(false)}
-							disabled={isLoading}
-							className="w-full sm:w-auto border-zinc-700 text-zinc-300 hover:bg-white/5"
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500"
-							disabled={!canSubmit}
-						>
-							{isLoading ? (
-								<>
-									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-									Creating...
-								</>
-							) : (
-								"Create Order"
-							)}
-						</Button>
-					</div>
 				</form>
-			</SheetContent>
-		</Sheet>
+			</DrawerBody>
+
+			<DrawerFooter>
+				<Button
+					type="button"
+					variant="outline"
+					onClick={() => onOpenChange(false)}
+					disabled={isLoading}
+					className="w-full sm:w-auto border-zinc-700 text-zinc-300 hover:bg-white/5"
+				>
+					Cancel
+				</Button>
+				<Button
+					type="submit"
+					form="create-order-form"
+					className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500"
+					disabled={!canSubmit}
+				>
+					{isLoading ? (
+						<>
+							<Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+							Creating...
+						</>
+					) : (
+						"Create Order"
+					)}
+				</Button>
+			</DrawerFooter>
+		</Drawer>
 	);
 }
 

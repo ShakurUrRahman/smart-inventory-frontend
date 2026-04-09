@@ -2,18 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Order } from "@/lib/ordersApi";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { Modal, ModalBody, ModalHeader } from "../shared/DialogModal";
+import { Button } from "../ui/button";
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
 	Pending: ["Confirmed", "Cancelled"],
@@ -130,34 +123,31 @@ export function StatusConfirmDialog({
 	};
 
 	return (
-		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent className="w-[calc(100%-2rem)] sm:max-w-md rounded-xl mx-auto">
-				<AlertDialogHeader>
-					<AlertDialogTitle className="text-base sm:text-lg">
-						Update Order Status?
-					</AlertDialogTitle>
-					<AlertDialogDescription className="text-sm">
-						Mark order{" "}
-						<strong className="text-white">{orderNumber}</strong> as{" "}
-						<strong className="text-white">{newStatus}</strong>?
-					</AlertDialogDescription>
-				</AlertDialogHeader>
-				<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-2">
-					<AlertDialogCancel
-						disabled={isLoading}
-						className="w-full sm:w-auto"
-					>
-						Cancel
-					</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={handleConfirm}
-						disabled={isLoading}
-						className={`w-full sm:w-auto ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-					>
-						{isLoading ? "Updating..." : "Confirm"}
-					</AlertDialogAction>
+		<Modal open={open} onOpenChange={onOpenChange}>
+			<ModalHeader>
+				<div className="text-base sm:text-lg">Update Order Status?</div>
+				<div className="text-sm">
+					Mark order{" "}
+					<strong className="text-white">{orderNumber}</strong> as{" "}
+					<strong className="text-white">{newStatus}</strong>?
 				</div>
-			</AlertDialogContent>
-		</AlertDialog>
+			</ModalHeader>
+			<ModalBody className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-2">
+				<Button
+					disabled={isLoading}
+					onClick={() => onOpenChange(false)}
+					className="w-full sm:w-auto bg-slate-600/70 hover:bg-slate-600"
+				>
+					Cancel
+				</Button>
+				<Button
+					onClick={handleConfirm}
+					disabled={isLoading}
+					className={`bg-indigo-600 hover:bg-indigo-500 text-white ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+				>
+					{isLoading ? "Updating..." : "Confirm"}
+				</Button>
+			</ModalBody>
+		</Modal>
 	);
 }

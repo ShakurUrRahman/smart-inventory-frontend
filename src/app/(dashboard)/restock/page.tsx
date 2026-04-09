@@ -101,17 +101,12 @@ export default function RestockPage() {
 	});
 
 	// Get priority counts
-	const priorityCounts = useMemo(() => {
-		const counts = { High: 0, Medium: 0, Low: 0 };
-		if (queueData?.data) {
-			queueData.data.forEach((item) => {
-				if (!item.isResolved) {
-					counts[item.priority]++;
-				}
-			});
-		}
-		return counts;
-	}, [queueData?.data]);
+	const priorityCounts = queueData?.priorityCounts || {
+		All: 0,
+		High: 0,
+		Medium: 0,
+		Low: 0,
+	};
 
 	// Data
 	const items = queueData?.data || [];
@@ -137,29 +132,9 @@ export default function RestockPage() {
 		return Math.min((current / threshold) * 100, 100);
 	};
 
-	const getPriorityStyle = (percentage: number) => {
-		if (percentage <= 30)
-			return {
-				dot: "bg-red-500",
-				badge: "bg-red-500/20 text-red-400 border-red-500/30",
-				icon: "🔴",
-			};
-		if (percentage <= 60)
-			return {
-				dot: "bg-amber-500",
-				badge: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-				icon: "🟡",
-			};
-		return {
-			dot: "bg-green-500",
-			badge: "bg-green-500/20 text-green-400 border-green-500/30",
-			icon: "🟢",
-		};
-	};
-
 	const getProgressBarColor = (percentage: number) => {
 		if (percentage <= 30) return "bg-red-500";
-		if (percentage <= 60) return "bg-amber-500";
+		if (percentage <= 65) return "bg-amber-500";
 		return "bg-green-500"; // was bg-yellow-500
 	};
 
@@ -210,47 +185,52 @@ export default function RestockPage() {
 			/>
 
 			{/* Priority Filter Tabs */}
-			<div
-				className="flex gap-2 sm:gap-3 mb-6 border-b border-white/10 pb-2
-	overflow-x-auto whitespace-nowrap hide-scrollbar"
-			>
-				<button
-					onClick={() => {
-						setPriorityFilter("");
-						setPage(1);
-						updateUrl("", 1);
-					}}
-					className={`px-4 py-2 rounded-t-lg font-medium transition-colors flex-shrink-0  sm:px-4  text-sm sm:text-base  ${
-						priorityFilter === ""
-							? "text-indigo-400 border-b-2 border-indigo-400"
-							: "text-zinc-400 hover:text-zinc-300"
-					}`}
-				>
-					All
-				</button>
+			<div className="relative flex gap-2 sm:gap-3 mb-6 border-b border-white/10 pb-2 overflow-x-auto whitespace-nowrap hide-scrollbar">
+				{["All", "High", "Medium", "Low"].map((priority) => {
+					const value = priority === "All" ? "" : priority;
+					const isActive = priorityFilter === value;
 
-				{["High", "Medium", "Low"].map((priority) => (
-					<button
-						key={priority}
-						onClick={() => {
-							setPriorityFilter(priority);
-							setPage(1);
-							updateUrl(priority, 1);
-						}}
-						className={`px-4 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-2 flex-shrink-0  sm:px-4  text-sm sm:text-base  ${
-							priorityFilter === priority
-								? "text-indigo-400 border-b-2 border-indigo-400"
-								: "text-zinc-400 hover:text-zinc-300"
-						}`}
-					>
-						{PRIORITY_ICONS[priority]} {priority}
-						{priorityCounts[priority] > 0 && (
-							<span className="text-xs bg-white/10 px-2 py-1 rounded-full">
-								{priorityCounts[priority]}
-							</span>
-						)}
-					</button>
-				))}
+					return (
+						<motion.button
+							key={priority}
+							onClick={() => {
+								setPriorityFilter(value);
+								setPage(1);
+								updateUrl(value, 1);
+							}}
+							whileHover={{ scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							className={`relative px-4 py-2 rounded-t-lg font-medium transition-colors flex justify-start  items-center gap-3 text-sm sm:text-base ${
+								isActive
+									? "text-indigo-400"
+									: "text-zinc-400 hover:text-zinc-300"
+							}`}
+						>
+							{/* 🔥 Animated Sliding Indicator */}
+							{isActive && (
+								<motion.span
+									layoutId="tab-indicator"
+									className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-400"
+									transition={{
+										type: "spring",
+										stiffness: 400,
+										damping: 30,
+									}}
+								/>
+							)}
+
+							{/* Content */}
+							{priority !== "All" && PRIORITY_ICONS[priority]}
+							{priority}
+
+							{priorityCounts[priority] > 0 && (
+								<span className="text-xs bg-white/10 px-2 py-1 rounded-full">
+									{priorityCounts[priority]}
+								</span>
+							)}
+						</motion.button>
+					);
+				})}
 			</div>
 
 			{/* Empty State */}

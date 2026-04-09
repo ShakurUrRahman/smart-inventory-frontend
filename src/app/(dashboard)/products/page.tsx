@@ -153,6 +153,7 @@ export default function ProductsPage() {
 		}
 	};
 	const handleDeleteProduct = async () => {
+		setDeleteDialogOpen(false);
 		if (selectedProduct) {
 			await deleteMutation.mutateAsync(selectedProduct._id);
 			setSelectedProduct(null);

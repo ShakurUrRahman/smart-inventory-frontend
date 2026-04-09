@@ -5,27 +5,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Package, Trash2, ArrowUp } from "lucide-react";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Category } from "@/lib/categoriesApi";
 import { Product } from "@/lib/productsApi";
+import {
+	Modal,
+	ModalBody,
+	ModalFooter,
+	ModalHeader,
+} from "../shared/DialogModal";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 const productSchema = z.object({
@@ -130,41 +120,35 @@ export function AddEditProductDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent
-				className="
-					w-full max-w-lg
-					mx-auto
-					max-h-[90dvh] overflow-y-auto
-					bg-[#13151C] border border-white/10 text-white
-					p-4 sm:p-6
-					rounded-2xl
-				"
-			>
-				<DialogHeader className="mb-2">
-					<div className="flex items-center gap-3">
-						<div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
-							<Package className="w-4 h-4 text-indigo-400" />
+		<Modal open={open} onOpenChange={onOpenChange}>
+			{/* Header */}
+			<div className="px-6 pt-6 pb-2">
+				<div className="flex items-center gap-3">
+					<div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+						<Package className="w-4 h-4 text-indigo-400" />
+					</div>
+					<div>
+						<div className="text-white text-lg font-semibold">
+							{isEdit ? "Edit Product" : "Add Product"}
 						</div>
-						<div>
-							<DialogTitle className="text-white text-lg font-semibold">
-								{isEdit ? "Edit Product" : "Add Product"}
-							</DialogTitle>
-							<DialogDescription className="text-zinc-400 text-sm mt-0.5">
-								{isEdit
-									? "Update product information"
-									: "Create a new product for your inventory"}
-							</DialogDescription>
+						<div className="text-zinc-400 text-sm mt-0.5">
+							{isEdit
+								? "Update product information"
+								: "Create a new product for your inventory"}
 						</div>
 					</div>
-				</DialogHeader>
+				</div>
+			</div>
 
-				<form
-					onSubmit={handleSubmit(handleFormSubmit)}
-					className="space-y-4 mt-2"
-				>
+			{/* Form */}
+			<form
+				onSubmit={handleSubmit(handleFormSubmit)}
+				className="space-y-6"
+			>
+				{/* Body */}
+				<ModalBody className="px-6 py-4 space-y-5">
 					{/* Product Name */}
-					<div className="space-y-1.5">
+					<div className="space-y-2">
 						<Label
 							htmlFor="name"
 							className="text-zinc-300 text-sm font-medium"
@@ -187,7 +171,7 @@ export function AddEditProductDialog({
 					</div>
 
 					{/* Category */}
-					<div className="space-y-1.5">
+					<div className="space-y-2">
 						<Label
 							htmlFor="category"
 							className="text-zinc-300 text-sm font-medium"
@@ -216,10 +200,9 @@ export function AddEditProductDialog({
 						)}
 					</div>
 
-					{/* Price + Stock (side by side on sm+) */}
+					{/* Price + Stock */}
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-						{/* Price */}
-						<div className="space-y-1.5">
+						<div className="space-y-2">
 							<Label
 								htmlFor="price"
 								className="text-zinc-300 text-sm font-medium"
@@ -244,9 +227,8 @@ export function AddEditProductDialog({
 							)}
 						</div>
 
-						{/* Stock (only on add) */}
 						{!isEdit && (
-							<div className="space-y-1.5">
+							<div className="space-y-2">
 								<Label
 									htmlFor="stock"
 									className="text-zinc-300 text-sm font-medium"
@@ -274,8 +256,8 @@ export function AddEditProductDialog({
 						)}
 					</div>
 
-					{/* Min Stock Threshold */}
-					<div className="space-y-1.5">
+					{/* Min Stock */}
+					<div className="space-y-2">
 						<Label
 							htmlFor="minStockThreshold"
 							className="text-zinc-300 text-sm font-medium"
@@ -301,7 +283,7 @@ export function AddEditProductDialog({
 						)}
 					</div>
 
-					{/* Status Preview (add only) */}
+					{/* Status Preview */}
 					{!isEdit && (
 						<div className="p-3 rounded-lg bg-white/5 border border-white/10">
 							<p className="text-xs text-zinc-400">
@@ -312,18 +294,21 @@ export function AddEditProductDialog({
 							</p>
 						</div>
 					)}
+				</ModalBody>
 
-					{/* Actions */}
-					<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+				{/* Footer */}
+				<ModalFooter className="px-6 pb-6 pt-4 border-t border-white/10">
+					<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full">
 						<Button
 							type="button"
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
 							disabled={isLoading}
-							className="w-full sm:w-auto text-zinc-400 hover:text-white hover:bg-white/10"
+							className="bg-slate-600/70 hover:bg-slate-600"
 						>
 							Cancel
 						</Button>
+
 						<Button
 							type="submit"
 							disabled={isLoading}
@@ -341,9 +326,9 @@ export function AddEditProductDialog({
 							)}
 						</Button>
 					</div>
-				</form>
-			</DialogContent>
-		</Dialog>
+				</ModalFooter>
+			</form>
+		</Modal>
 	);
 }
 
@@ -356,50 +341,44 @@ export function DeleteProductDialog({
 	isLoading = false,
 }: DeleteProductDialogProps) {
 	return (
-		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent
-				className="
-					w-[calc(100%-2rem)] sm:max-w-md
-					bg-[#13151C] border border-white/10 text-white
-					rounded-2xl p-4 sm:p-6
-				"
-			>
-				<AlertDialogHeader>
-					<div className="flex items-center gap-3 mb-1">
-						<div className="p-2 rounded-lg bg-red-500/20 border border-red-500/30">
-							<Trash2 className="w-4 h-4 text-red-400" />
-						</div>
-						<AlertDialogTitle className="text-white text-lg font-semibold">
-							Delete Product?
-						</AlertDialogTitle>
+		<Modal open={open} onOpenChange={onOpenChange}>
+			<ModalHeader>
+				<div className="flex items-center gap-3 mb-1">
+					<div className="p-2 rounded-lg bg-red-500/20 border border-red-500/30">
+						<Trash2 className="w-4 h-4 text-red-400" />
 					</div>
-					<AlertDialogDescription className="text-zinc-400 text-sm pl-11">
-						Are you sure you want to delete{" "}
-						<span className="text-white font-medium">
-							{productName}
-						</span>
-						? This action cannot be undone.
-					</AlertDialogDescription>
-				</AlertDialogHeader>
+					<div className="text-white text-lg font-semibold">
+						Delete Product?
+					</div>
+				</div>
+				<div className="text-zinc-400 text-sm pl-11">
+					Are you sure you want to delete{" "}
+					<span className="text-white font-medium">
+						{productName}
+					</span>
+					? This action cannot be undone.
+				</div>
+			</ModalHeader>
 
+			<ModalFooter>
 				<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
-					<AlertDialogCancel
+					<Button
 						disabled={isLoading}
-						className="w-full sm:w-auto bg-transparent border-zinc-700 text-zinc-300
-						           hover:bg-white/10 hover:text-white"
+						onClick={() => onOpenChange(false)}
+						className="bg-slate-600/70 hover:bg-slate-600"
 					>
 						Cancel
-					</AlertDialogCancel>
-					<AlertDialogAction
+					</Button>
+					<Button
 						onClick={onConfirm}
 						disabled={isLoading}
-						className="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white border-0"
+						className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white"
 					>
 						{isLoading ? "Deleting..." : "Delete Product"}
-					</AlertDialogAction>
+					</Button>
 				</div>
-			</AlertDialogContent>
-		</AlertDialog>
+			</ModalFooter>
+		</Modal>
 	);
 }
 
@@ -431,34 +410,29 @@ export function RestockProductDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent
-				className="
-					w-[calc(100%-2rem)] sm:max-w-md
-					bg-[#13151C] border border-white/10 text-white
-					rounded-2xl p-4 sm:p-6
-				"
-			>
-				<DialogHeader className="mb-2">
+		<Modal open={open} onOpenChange={onOpenChange}>
+			<ModalHeader>
+				<div className="mb-2">
 					<div className="flex items-center gap-3">
 						<div className="p-2 rounded-lg bg-amber-500/20 border border-amber-500/30">
 							<ArrowUp className="w-4 h-4 text-amber-400" />
 						</div>
 						<div>
-							<DialogTitle className="text-white text-lg font-semibold">
+							<div className="text-white text-lg font-semibold">
 								Restock Product
-							</DialogTitle>
-							<DialogDescription className="text-zinc-400 text-sm mt-0.5">
+							</div>
+							<div className="text-zinc-400 text-sm mt-0.5">
 								Add stock to{" "}
 								<span className="text-white font-medium">
 									{product.name}
 								</span>
-							</DialogDescription>
+							</div>
 						</div>
 					</div>
-				</DialogHeader>
+				</div>
 
 				{/* Stock info — side by side on sm+ */}
+
 				<div className="grid grid-cols-2 gap-3 my-4">
 					<div className="p-3 rounded-lg bg-white/5 border border-white/10">
 						<p className="text-xs text-zinc-400 mb-1">
@@ -477,11 +451,13 @@ export function RestockProductDialog({
 						<p className="text-xs text-green-500/70">units</p>
 					</div>
 				</div>
+			</ModalHeader>
 
-				<form
-					onSubmit={handleSubmit(handleFormSubmit)}
-					className="space-y-4"
-				>
+			<form
+				onSubmit={handleSubmit(handleFormSubmit)}
+				className="space-y-4"
+			>
+				<ModalBody>
 					<div className="space-y-1.5">
 						<Label
 							htmlFor="quantity"
@@ -505,14 +481,16 @@ export function RestockProductDialog({
 							</p>
 						)}
 					</div>
+				</ModalBody>
 
+				<ModalFooter>
 					<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
 						<Button
 							type="button"
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
 							disabled={isLoading}
-							className="w-full sm:w-auto text-zinc-400 hover:text-white hover:bg-white/10"
+							className="w-full sm:w-auto bg-slate-600/70 hover:bg-slate-600"
 						>
 							Cancel
 						</Button>
@@ -531,8 +509,8 @@ export function RestockProductDialog({
 							)}
 						</Button>
 					</div>
-				</form>
-			</DialogContent>
-		</Dialog>
+				</ModalFooter>
+			</form>
+		</Modal>
 	);
 }

@@ -5,26 +5,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowUp, Loader2, Trash2 } from "lucide-react";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RestockQueueItem } from "@/lib/restockApi";
+import {
+	Modal,
+	ModalBody,
+	ModalFooter,
+	ModalHeader,
+} from "../shared/DialogModal";
 
 const restockSchema = z.object({
 	quantity: z.number().int().min(1, "Quantity must be at least 1"),
@@ -77,36 +67,29 @@ export function RestockModal({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent
-				className="
-      w-[calc(100%-2rem)] sm:max-w-md
-      bg-[#13151C] border border-white/10 text-white
-      rounded-2xl p-4 sm:p-6
-      max-h-[90dvh] overflow-y-auto
-    "
-			>
-				<DialogHeader className="mb-2">
-					<div className="flex items-center gap-3">
-						<div className="p-2 rounded-lg bg-green-500/20 border border-green-500/30">
-							<ArrowUp className="w-4 h-4 text-green-400" />
+		<Modal open={open} onOpenChange={onOpenChange}>
+			<ModalHeader className="mb-2">
+				<div className="flex items-center gap-3">
+					<div className="p-2 rounded-lg bg-green-500/20 border border-green-500/30">
+						<ArrowUp className="w-4 h-4 text-green-400" />
+					</div>
+					<div>
+						<div className="text-white text-lg font-semibold">
+							Restock Product
 						</div>
-						<div>
-							<DialogTitle className="text-white text-lg font-semibold">
-								Restock Product
-							</DialogTitle>
-							<DialogDescription className="text-zinc-400 text-sm mt-0.5">
-								Add stock to{" "}
-								<span className="text-white font-medium">
-									{item.product.name}
-								</span>
-							</DialogDescription>
+						<div className="text-zinc-400 text-sm mt-0.5">
+							Add stock to{" "}
+							<span className="text-white font-medium">
+								{item.product.name}
+							</span>
 						</div>
 					</div>
-				</DialogHeader>
+				</div>
+			</ModalHeader>
 
-				<div className="space-y-4 mt-2">
-					{/* Current Info — side by side on sm+ */}
+			<div className=" mt-2">
+				{/* Current Info — side by side on sm+ */}
+				<ModalBody>
 					<div className="grid grid-cols-2 gap-3">
 						<div className="p-3 rounded-lg bg-white/5 border border-white/10">
 							<p className="text-xs text-zinc-400 mb-1">
@@ -127,16 +110,18 @@ export function RestockModal({
 							<p className="text-xs text-zinc-500">units</p>
 						</div>
 					</div>
+				</ModalBody>
 
-					<form
-						onSubmit={handleSubmit(handleFormSubmit)}
-						className="space-y-4"
-					>
-						{/* Quantity Input */}
-						<div className="space-y-1.5">
+				<form
+					onSubmit={handleSubmit(handleFormSubmit)}
+					className="space-y-4"
+				>
+					{/* Quantity Input */}
+					<ModalBody>
+						<div className="mb-3">
 							<Label
 								htmlFor="quantity"
-								className="text-zinc-300 text-sm font-medium"
+								className="text-zinc-300 text-sm font-medium "
 							>
 								Quantity to Add
 							</Label>
@@ -181,15 +166,17 @@ export function RestockModal({
 									: "⚠️ Still below threshold — will remain in queue"}
 							</p>
 						</div>
+					</ModalBody>
 
-						{/* Actions */}
+					{/* Actions */}
+					<ModalFooter>
 						<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
 							<Button
 								type="button"
 								variant="ghost"
 								onClick={() => onOpenChange(false)}
 								disabled={isLoading}
-								className="w-full sm:w-auto text-zinc-400 hover:text-white hover:bg-white/10"
+								className="w-full sm:w-auto bg-slate-600/70 hover:bg-slate-600"
 							>
 								Cancel
 							</Button>
@@ -208,10 +195,10 @@ export function RestockModal({
 								)}
 							</Button>
 						</div>
-					</form>
-				</div>
-			</DialogContent>
-		</Dialog>
+					</ModalFooter>
+				</form>
+			</div>
+		</Modal>
 	);
 }
 
@@ -223,52 +210,41 @@ export function RemoveConfirmDialog({
 	isLoading = false,
 }: RemoveConfirmDialogProps) {
 	return (
-		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent
-				className="
-      w-[calc(100%-2rem)] sm:max-w-md
-      bg-[#13151C] border border-white/10 text-white
-      rounded-2xl p-4 sm:p-6
-    "
-			>
-				<AlertDialogHeader>
-					<div className="flex items-center gap-3 mb-1">
-						<div className="p-2 rounded-lg bg-red-500/20 border border-red-500/30">
-							<Trash2 className="w-4 h-4 text-red-400" />
-						</div>
-						<AlertDialogTitle className="text-white text-lg font-semibold">
-							Remove from queue?
-						</AlertDialogTitle>
+		<Modal open={open} onOpenChange={onOpenChange}>
+			<ModalHeader>
+				<div className="flex items-center gap-3 mb-1">
+					<div className="p-2 rounded-lg bg-red-500/20 border border-red-500/30">
+						<Trash2 className="w-4 h-4 text-red-400" />
 					</div>
-					<AlertDialogDescription className="text-zinc-400 text-sm md:pl-11">
-						Remove{" "}
-						<span className="text-white font-medium">
-							{productName}
-						</span>{" "}
-						from the restock queue? This won&apos;t change stock
-						levels.
-					</AlertDialogDescription>
-				</AlertDialogHeader>
-
-				<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
-					<AlertDialogCancel
-						disabled={isLoading}
-						className="w-full sm:w-auto bg-transparent border-zinc-700 
-                   text-zinc-300 hover:bg-white/10 hover:text-white"
-					>
-						Cancel
-					</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={onConfirm}
-						disabled={isLoading}
-						className="w-full sm:w-auto bg-red-600 hover:bg-red-500 
-                   text-white border-0 disabled:opacity-50 
-                   disabled:cursor-not-allowed"
-					>
-						{isLoading ? "Removing..." : "Remove"}
-					</AlertDialogAction>
+					<div className="text-white text-lg font-semibold">
+						Remove from queue?
+					</div>
 				</div>
-			</AlertDialogContent>
-		</AlertDialog>
+				<div className="text-zinc-400 text-sm md:pl-11">
+					Remove{" "}
+					<span className="text-white font-medium">
+						{productName}
+					</span>{" "}
+					from the restock queue? This won&apos;t change stock levels.
+				</div>
+			</ModalHeader>
+
+			<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4 m-4">
+				<Button
+					disabled={isLoading}
+					onClick={() => onOpenChange(false)}
+					className="w-full sm:w-auto bg-slate-600/70 hover:bg-slate-600"
+				>
+					Cancel
+				</Button>
+				<Button
+					onClick={onConfirm}
+					disabled={isLoading}
+					className="bg-indigo-600 hover:bg-indigo-500 w-full sm:w-auto"
+				>
+					{isLoading ? "Removing..." : "Remove"}
+				</Button>
+			</div>
+		</Modal>
 	);
 }

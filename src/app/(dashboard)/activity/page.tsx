@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import apiClient from "@/lib/api";
 
-const ENTITY_TYPES = ["all", "Order", "Product", "Stock", "User", "Category"];
+const ENTITY_TYPES = ["All", "Order", "Product", "Stock", "User", "Category"];
 
 const ENTITY_COLORS: Record<string, { bg: string; text: string; dot: string }> =
 	{
@@ -46,6 +46,7 @@ const ENTITY_COLORS: Record<string, { bg: string; text: string; dot: string }> =
 	};
 
 const ENTITY_ICONS: Record<string, any> = {
+	All: "",
 	Order: ShoppingCart,
 	Product: Package,
 	Stock: ArrowUp,
@@ -79,7 +80,7 @@ async function getActivityLogs(params: {
 	limit?: number;
 }): Promise<ActivityResponse> {
 	const query = new URLSearchParams();
-	if (params.entityType && params.entityType !== "all") {
+	if (params.entityType && params.entityType !== "All") {
 		query.append("entityType", params.entityType);
 	}
 	if (params.page) query.append("page", params.page.toString());
@@ -145,7 +146,7 @@ export default function ActivityPage() {
 	const router = useRouter();
 
 	const [entityFilter, setEntityFilter] = useState(
-		searchParams.get("entityType") || "all",
+		searchParams.get("entityType") || "",
 	);
 	const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
 
@@ -153,7 +154,7 @@ export default function ActivityPage() {
 
 	const updateUrl = (newFilter: string, newPage: number) => {
 		const params = new URLSearchParams();
-		if (newFilter && newFilter !== "all")
+		if (newFilter && newFilter !== "All")
 			params.set("entityType", newFilter);
 		if (newPage > 1) params.set("page", newPage.toString());
 		router.push(`/activity?${params.toString()}`);
@@ -197,23 +198,46 @@ export default function ActivityPage() {
 				className="flex gap-2 sm:gap-3 mb-6 border-b border-white/10 pb-2
 	overflow-x-auto whitespace-nowrap hide-scrollbar"
 			>
-				{ENTITY_TYPES.map((type) => (
-					<button
-						key={type}
-						onClick={() => {
-							setEntityFilter(type);
-							setPage(1);
-							updateUrl(type, 1);
-						}}
-						className={`px-4 py-2 rounded-t-lg font-medium transition-colors capitalize flex-shrink-0  sm:px-4  text-sm sm:text-base  ${
-							entityFilter === type
-								? "text-indigo-400 border-b-2 border-indigo-400"
-								: "text-zinc-400 hover:text-zinc-300"
-						}`}
-					>
-						{type}
-					</button>
-				))}
+				{ENTITY_TYPES.map((type) => {
+					const value = type === "All" ? "" : type;
+					const isActive = entityFilter === value;
+					const Icon = ENTITY_ICONS[type];
+
+					return (
+						<motion.button
+							key={type}
+							onClick={() => {
+								setEntityFilter(value);
+								setPage(1);
+								updateUrl(value, 1);
+							}}
+							whileHover={{ scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							className={`relative px-4 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-2 flex-shrink-0 text-sm sm:text-base ${
+								isActive
+									? "text-indigo-400"
+									: "text-zinc-400 hover:text-zinc-300"
+							}`}
+						>
+							{/* 🔥 Animated Sliding Indicator */}
+							{isActive && (
+								<motion.span
+									layoutId="tab-indicator"
+									className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-400"
+									transition={{
+										type: "spring",
+										stiffness: 400,
+										damping: 30,
+									}}
+								/>
+							)}
+							{type !== "All" && Icon && (
+								<Icon className="w-4 h-4" />
+							)}
+							{type}
+						</motion.button>
+					);
+				})}
 			</div>
 
 			{/* Loading State */}

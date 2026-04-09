@@ -25,6 +25,12 @@ export interface RestockQueueResponse {
 	page: number;
 	totalPages: number;
 	limit: number;
+	priorityCounts: {
+		All: number;
+		High: number;
+		Medium: number;
+		Low: number;
+	};
 }
 
 export interface ResolveRestockPayload {
