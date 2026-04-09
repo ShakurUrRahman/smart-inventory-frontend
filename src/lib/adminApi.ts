@@ -128,25 +128,32 @@ export interface UpdatePermissionsPayload {
 	canDelete?: boolean;
 }
 
+type UpdatePermissionsResponse = {
+	success: boolean;
+	message: string;
+	categoryPermissions: UpdatePermissionsPayload;
+};
+
 export const updateCategoryPermissions = async (
 	userId: string,
 	permissions: UpdatePermissionsPayload,
 ): Promise<UpdatePermissionsPayload> => {
 	try {
-		const response = await apiClient.patch<{
-			success: boolean;
-			categoryPermissions: UpdatePermissionsPayload;
-		}>(`/admin/users/${userId}/category-permissions`, permissions);
-		if (!response.data.success) {
-			throw new Error(
-				response.data.message || "Failed to update permissions",
-			);
+		const { data } = await apiClient.patch<UpdatePermissionsResponse>(
+			`/admin/users/${userId}/category-permissions`,
+			permissions,
+		);
+
+		if (!data.success) {
+			throw new Error(data.message || "Failed to update permissions");
 		}
 
-		return response.data.categoryPermissions;
+		return data.categoryPermissions;
 	} catch (error: any) {
 		throw new Error(
-			error.response?.data?.message || "Failed to update permissions",
+			error?.response?.data?.message ||
+				error.message ||
+				"Failed to update permissions",
 		);
 	}
 };

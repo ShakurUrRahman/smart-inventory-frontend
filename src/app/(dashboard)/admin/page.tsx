@@ -144,8 +144,14 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 	const queryClient = useQueryClient();
 
 	const updatePermsMutation = useMutation({
-		mutationFn: ({ key, value }: { key: string; value: boolean }) =>
-			updateCategoryPermissions(user.id, { [key]: value } as any),
+		mutationFn: ({
+			permission,
+			value,
+		}: {
+			permission: string;
+			value: boolean;
+		}) => updateCategoryPermissions(user._id, { [permission]: value }),
+
 		onSuccess: (_data, variables) => {
 			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
 
@@ -155,7 +161,9 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 				canDelete: "Delete",
 			};
 
-			const label = permissionLabels[variables.key] || variables.key;
+			// Use 'variables.permission' here
+			const label =
+				permissionLabels[variables.permission] || variables.permission;
 			const status = variables.value ? "enabled" : "disabled";
 
 			toast.success(`${label} permission ${status} for ${user.name}`);
@@ -317,49 +325,48 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 												user.categoryPermissions?.[
 													key
 												] || false;
-											const isUpdating =
-												updatePermsMutation.isPending;
-
+											const isThisOneUpdating =
+												updatePermsMutation.isPending &&
+												updatePermsMutation.variables
+													?.permission === key;
 											return (
 												<div
 													key={key}
-													className={`flex items-center justify-between rounded-lg border px-3 py-2 transition-colors ${
-														checked
-															? "border-indigo-500/20 bg-indigo-500/10"
-															: "border-white/10 bg-white/5"
-													}`}
+													className="flex flex-col gap-2"
 												>
-													<span
-														className={`flex items-center gap-1 text-xs font-medium ${
-															checked
-																? "text-indigo-400"
-																: "text-zinc-500"
-														}`}
-													>
+													<label className="text-xs font-medium text-zinc-400">
 														{icon} {label}
-													</span>
+													</label>
 
-													{isUpdating ? (
-														<Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
-													) : (
-														<Switch
-															checked={checked}
-															onCheckedChange={(
-																value,
-															) =>
-																updatePermsMutation.mutate(
-																	{
-																		permission:
-																			key,
-																		value,
-																	},
-																)
-															}
-															disabled={
-																isUpdating
-															}
-														/>
-													)}
+													<button
+														onClick={() =>
+															updatePermsMutation.mutate(
+																{
+																	permission:
+																		key,
+																	value: !checked,
+																},
+															)
+														}
+														disabled={
+															isThisOneUpdating
+														}
+														className={`relative px-4 py-1 rounded-lg border-2 font-medium text-sm transition-all ${
+															checked
+																? "bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/30"
+																: "bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10"
+														} disabled:opacity-50 disabled:cursor-not-allowed`}
+													>
+														{isThisOneUpdating ? (
+															<Loader2 className="w-4 h-4 animate-spin mx-auto" />
+														) : (
+															<span>
+																{checked
+																	? "ON"
+																	: "OFF"}
+															</span>
+														)}
+													</button>
 												</div>
 											);
 										})}
@@ -635,6 +642,8 @@ function PendingApprovals({ isLoadingProducts, products, totalPending }: any) {
 	const [rejectReason, setRejectReason] = useState("");
 	const queryClient = useQueryClient();
 
+	console.log(products);
+
 	const approveMutation = useMutation({
 		mutationFn: (id: string) => approveProduct(id),
 		onSuccess: (_data, id) => {
@@ -796,44 +805,43 @@ function PendingApprovals({ isLoadingProducts, products, totalPending }: any) {
 			)}
 
 			{/* Approve Confirm */}
-			<AlertDialog
+			<Modal
 				open={!!confirmApprove}
 				onOpenChange={(open) => !open && setConfirmApprove(null)}
 			>
-				<AlertDialogContent className="bg-[#13161F] border border-white/10 text-white w-[calc(100%-2rem)] sm:max-w-md rounded-xl mx-auto">
-					<AlertDialogHeader>
-						<AlertDialogTitle>
-							Approve &apos;{confirmApprove?.name}&apos;?
-						</AlertDialogTitle>
-						<AlertDialogDescription className="text-zinc-400">
-							This product will become visible to all users
-							immediately.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-2">
-						<AlertDialogCancel className="border-zinc-700 text-zinc-300 w-full sm:w-auto">
-							Cancel
-						</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={() =>
-								approveMutation.mutate(
-									confirmApprove._id || confirmApprove.id,
-								)
-							}
-							disabled={approveMutation.isPending}
-							className="bg-green-600 hover:bg-green-500 w-full sm:w-auto"
-						>
-							{approveMutation.isPending && (
-								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-							)}
-							Approve
-						</AlertDialogAction>
+				<ModalHeader>
+					<div>Approve &apos;{confirmApprove?.name}&apos;?</div>
+					<div className="text-zinc-400">
+						This product will become visible to all users
+						immediately.
 					</div>
-				</AlertDialogContent>
-			</AlertDialog>
+				</ModalHeader>
+				<ModalFooter className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-2">
+					<Button
+						onClick={() => setConfirmApprove(null)}
+						className="bg-slate-600/70 hover:bg-slate-600 w-full sm:w-auto"
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={() =>
+							approveMutation.mutate(
+								confirmApprove._id || confirmApprove.id,
+							)
+						}
+						disabled={approveMutation.isPending}
+						className="bg-green-600 hover:bg-green-500 w-full sm:w-auto"
+					>
+						{approveMutation.isPending && (
+							<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+						)}
+						Approve
+					</Button>
+				</ModalFooter>
+			</Modal>
 
 			{/* Reject Dialog */}
-			<Dialog
+			<Modal
 				open={!!rejectDialog}
 				onOpenChange={(open) => {
 					if (!open) {
@@ -841,63 +849,88 @@ function PendingApprovals({ isLoadingProducts, products, totalPending }: any) {
 						setRejectReason("");
 					}
 				}}
+				className="px-3"
 			>
-				<DialogContent className="bg-[#13161F] border border-white/10 text-white w-[calc(100%-2rem)] sm:max-w-md rounded-xl mx-auto">
-					<DialogHeader>
-						<DialogTitle>Reject Product</DialogTitle>
-						<DialogDescription className="text-zinc-400">
-							{rejectDialog?.name}
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-2">
-						<label className="text-sm text-zinc-300 font-medium">
-							Reason for rejection
-						</label>
-						<Textarea
-							placeholder="Provide a clear reason (minimum 10 characters)..."
-							value={rejectReason}
-							onChange={(e) => setRejectReason(e.target.value)}
-							className="bg-[#1C1F2A] border-zinc-700/60 text-white"
-							rows={4}
-						/>
-						<p
-							className={`text-xs ${rejectReason.length < 10 ? "text-zinc-600" : "text-green-400"}`}
-						>
-							{rejectReason.length} / 10 characters minimum
-						</p>
+				<ModalHeader className="pb-4 border-b border-white/5">
+					<div className="flex items-center gap-3">
+						<div className="p-2 rounded-full bg-red-500/10 border border-red-500/20">
+							<AlertTriangle className="w-5 h-5 text-red-500" />
+						</div>
+						<div>
+							<h3 className="text-lg font-semibold text-white">
+								Reject Product
+							</h3>
+							<p className="text-sm text-zinc-400 font-normal">
+								Refusing:{" "}
+								<span className="text-zinc-200">
+									{rejectDialog?.name}
+								</span>
+							</p>
+						</div>
 					</div>
-					<DialogFooter className="flex-col-reverse sm:flex-row gap-2">
-						<Button
-							variant="outline"
-							onClick={() => {
-								setRejectDialog(null);
-								setRejectReason("");
-							}}
-							className="border-zinc-700 text-zinc-300 w-full sm:w-auto"
+				</ModalHeader>
+
+				<div className="py-6 space-y-3">
+					{/* Corrected Layout: Label has its own row */}
+					<label className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
+						Reason for rejection
+					</label>
+
+					<Textarea
+						placeholder="Why is this product being rejected? Please provide specific details..."
+						value={rejectReason}
+						onChange={(e) => setRejectReason(e.target.value)}
+						className="bg-black/20 border-white/50 text-white placeholder:text-white/30 focus:border-red-500/50 focus:ring-red-500/20 transition-all resize-none"
+						rows={4}
+					/>
+
+					{/* Corrected Layout: Counter is moved below the Textarea */}
+					<div className="flex justify-end pt-1">
+						<span
+							className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+								rejectReason.length < 10
+									? "text-zinc-500 border-white/5 bg-white/2"
+									: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10"
+							}`}
 						>
-							Cancel
-						</Button>
-						<Button
-							variant="destructive"
-							onClick={() =>
-								rejectMutation.mutate(
-									rejectDialog._id || rejectDialog.id,
-								)
-							}
-							disabled={
-								rejectReason.length < 10 ||
-								rejectMutation.isPending
-							}
-							className="w-full sm:w-auto"
-						>
-							{rejectMutation.isPending && (
+							{rejectReason.length} / 10 min
+						</span>
+					</div>
+				</div>
+
+				<ModalFooter className="flex-col-reverse sm:flex-row gap-3 pt-4 ">
+					<Button
+						onClick={() => {
+							setRejectDialog(null);
+							setRejectReason("");
+						}}
+						className="bg-slate-600/70 hover:bg-slate-600 w-full sm:w-auto"
+					>
+						Cancel
+					</Button>
+
+					<Button
+						onClick={() =>
+							rejectMutation.mutate(
+								rejectDialog._id || rejectDialog.id,
+							)
+						}
+						disabled={
+							rejectReason.length < 10 || rejectMutation.isPending
+						}
+						className="w-full sm:w-auto bg-rose-600/70 hover:bg-rose-600-600 disabled:bg-rose-600/40 disabled:cursor-not-allowed"
+					>
+						{rejectMutation.isPending ? (
+							<>
 								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-							)}
-							Reject Product
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+								Processing...
+							</>
+						) : (
+							"Confirm Rejection"
+						)}
+					</Button>
+				</ModalFooter>
+			</Modal>
 		</div>
 	);
 }
@@ -1020,7 +1053,7 @@ export default function AdminPanel() {
 					{activeTab === "approvals" && (
 						<PendingApprovals
 							isLoadingProducts={isLoadingProducts}
-							products={productsData?.products || []}
+							products={productsData?.data || []}
 							totalPending={pendingCount}
 						/>
 					)}
