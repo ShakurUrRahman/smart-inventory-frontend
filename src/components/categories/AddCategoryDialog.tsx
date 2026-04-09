@@ -106,7 +106,7 @@ export function AddCategoryDialog({
 							variant="outline"
 							onClick={() => onOpenChange(false)}
 							disabled={isLoading}
-							className="w-full sm:w-auto"
+							className="w-full sm:w-auto bg-slate-600/70 hover:bg-slate-600"
 						>
 							Cancel
 						</Button>

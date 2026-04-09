@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowUp, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
@@ -58,15 +58,52 @@ export default function RestockPage() {
 	};
 
 	// Fetch restock queue
-	const { data: queueData, isLoading } = useQuery({
-		queryKey: ["restock", { priorityFilter, page }],
-		queryFn: () =>
-			restockApi.getRestockQueue({
-				priority: priorityFilter || undefined,
-				page,
-				limit: LIMIT,
-			}),
+	const { data: allQueueData, isLoading } = useQuery({
+		queryKey: ["restock"], // No filter!
+		queryFn: () => restockApi.getRestockQueue(), // No params!
 	});
+
+	useEffect(() => {
+		console.log("restockApi:", restockApi);
+		console.log(
+			"getRestockQueue exists?",
+			typeof restockApi?.getRestockQueue,
+		);
+	}, []);
+
+	// Filter locally based on tab selection
+	const filteredItems = useMemo(() => {
+		let filtered = allQueueData?.data || [];
+
+		if (priorityFilter) {
+			filtered = filtered.filter(
+				(item) => item.priority === priorityFilter,
+			);
+		}
+
+		return filtered.filter((item) => !item.isResolved);
+	}, [allQueueData?.data, priorityFilter]);
+
+	// Paginate
+	const paginatedItems = useMemo(() => {
+		const startIdx = (page - 1) * LIMIT;
+		return filteredItems.slice(startIdx, startIdx + LIMIT);
+	}, [filteredItems, page]);
+
+	const totalPages = Math.ceil(filteredItems.length / LIMIT);
+
+	// ✅ NEVER changes - stays stable forever
+	const priorityCounts = allQueueData?.priorityCounts || {
+		All: 0,
+		High: 0,
+		Medium: 0,
+		Low: 0,
+	};
+
+	// Update data
+	const items = paginatedItems;
+	const total = filteredItems.length;
+	const isEmpty = filteredItems.length === 0 && !isLoading;
 
 	// Mutations
 	const resolveMutation = useMutation({
@@ -101,18 +138,18 @@ export default function RestockPage() {
 	});
 
 	// Get priority counts
-	const priorityCounts = queueData?.priorityCounts || {
-		All: 0,
-		High: 0,
-		Medium: 0,
-		Low: 0,
-	};
+	// const priorityCounts = queueData?.priorityCounts || {
+	// 	All: 0,
+	// 	High: 0,
+	// 	Medium: 0,
+	// 	Low: 0,
+	// };
 
-	// Data
-	const items = queueData?.data || [];
-	const total = queueData?.total || 0;
-	const totalPages = queueData?.totalPages || 1;
-	const isEmpty = items.length === 0 && !isLoading;
+	// // Data
+	// const items = queueData?.data || [];
+	// const total = queueData?.total || 0;
+	// const totalPages = queueData?.totalPages || 1;
+	// const isEmpty = items.length === 0 && !isLoading;
 
 	const formatRelativeTime = (dateString: string) => {
 		const date = new Date(dateString);
@@ -184,7 +221,6 @@ export default function RestockPage() {
 				}
 			/>
 
-			{/* Priority Filter Tabs */}
 			<div className="relative flex gap-2 sm:gap-3 mb-6 border-b border-white/10 pb-2 overflow-x-auto whitespace-nowrap hide-scrollbar">
 				{["All", "High", "Medium", "Low"].map((priority) => {
 					const value = priority === "All" ? "" : priority;
@@ -200,7 +236,7 @@ export default function RestockPage() {
 							}}
 							whileHover={{ scale: 1.05 }}
 							whileTap={{ scale: 0.95 }}
-							className={`relative px-4 py-2 rounded-t-lg font-medium transition-colors flex justify-start  items-center gap-3 text-sm sm:text-base ${
+							className={`relative px-4 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-3 text-sm sm:text-base ${
 								isActive
 									? "text-indigo-400"
 									: "text-zinc-400 hover:text-zinc-300"

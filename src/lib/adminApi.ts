@@ -137,6 +137,12 @@ export const updateCategoryPermissions = async (
 			success: boolean;
 			categoryPermissions: UpdatePermissionsPayload;
 		}>(`/admin/users/${userId}/category-permissions`, permissions);
+		if (!response.data.success) {
+			throw new Error(
+				response.data.message || "Failed to update permissions",
+			);
+		}
+
 		return response.data.categoryPermissions;
 	} catch (error: any) {
 		throw new Error(

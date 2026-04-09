@@ -62,6 +62,11 @@ import {
 	SheetDescription,
 } from "@/components/ui/sheet";
 import { PageHeader } from "@/components/layout/PageHeader";
+import {
+	Modal,
+	ModalFooter,
+	ModalHeader,
+} from "@/components/shared/DialogModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const ROLE_STYLES: Record<
@@ -143,11 +148,22 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 			updateCategoryPermissions(user.id, { [key]: value } as any),
 		onSuccess: (_data, variables) => {
 			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-			toast.success(
-				`${user.name}: ${variables.key.replace("can", "Can ")} ${variables.value ? "✅ enabled" : "❌ disabled"}`,
-			);
+
+			const permissionLabels: Record<string, string> = {
+				canCreate: "Create",
+				canUpdate: "Update",
+				canDelete: "Delete",
+			};
+
+			const label = permissionLabels[variables.key] || variables.key;
+			const status = variables.value ? "enabled" : "disabled";
+
+			toast.success(`${label} permission ${status} for ${user.name}`);
 		},
-		onError: (error: any) => toast.error(error.message),
+		onError: (error: any) => {
+			console.error("Permission update error:", error);
+			toast.error(error.message || "Failed to update permissions");
+		},
 	});
 
 	const canModify = !user.isSuperAdmin;
@@ -274,52 +290,57 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 								</div>
 							</div>
 
-							{/* Category Permissions — only for managers */}
 							{user.role === "manager" && (
-								<div className="space-y-2">
-									<p className="text-zinc-500 text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
-										<Tag className="w-3 h-3" /> Category
-										Permissions
-									</p>
-									<div className="grid grid-cols-3 gap-3">
+								<div className="space-y-3">
+									<h4 className="text-sm font-semibold text-white">
+										Category Permissions
+									</h4>
+									<div className="grid grid-cols-3 gap-2">
 										{[
 											{
 												key: "canCreate",
 												label: "Create",
+												icon: "➕",
 											},
 											{
 												key: "canUpdate",
 												label: "Update",
+												icon: "✏️",
 											},
 											{
 												key: "canDelete",
 												label: "Delete",
+												icon: "🗑️",
 											},
-										].map(({ key, label }) => {
+										].map(({ key, label, icon }) => {
 											const checked =
 												user.categoryPermissions?.[
 													key
 												] || false;
 											const isUpdating =
-												updatePermsMutation.isPending &&
-												updatePermsMutation.variables
-													?.key === key;
+												updatePermsMutation.isPending;
+
 											return (
 												<div
 													key={key}
-													className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors ${
+													className={`flex items-center justify-between rounded-lg border px-3 py-2 transition-colors ${
 														checked
-															? "bg-indigo-500/10 border-indigo-500/20"
-															: "bg-white/3 border-white/10"
+															? "border-indigo-500/20 bg-indigo-500/10"
+															: "border-white/10 bg-white/5"
 													}`}
 												>
 													<span
-														className={`text-xs font-medium ${checked ? "text-indigo-400" : "text-zinc-500"}`}
+														className={`flex items-center gap-1 text-xs font-medium ${
+															checked
+																? "text-indigo-400"
+																: "text-zinc-500"
+														}`}
 													>
-														{label}
+														{icon} {label}
 													</span>
+
 													{isUpdating ? (
-														<Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+														<Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
 													) : (
 														<Switch
 															checked={checked}
@@ -328,13 +349,14 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 															) =>
 																updatePermsMutation.mutate(
 																	{
-																		key,
+																		permission:
+																			key,
 																		value,
 																	},
 																)
 															}
 															disabled={
-																updatePermsMutation.isPending
+																isUpdating
 															}
 														/>
 													)}
@@ -494,56 +516,54 @@ function UserManagement({
 			)}
 
 			{/* Confirm Dialog */}
-			<AlertDialog
+			<Modal
 				open={!!confirmAction}
 				onOpenChange={(open) => !open && setConfirmAction(null)}
 			>
-				<AlertDialogContent className="bg-[#13161F] border border-white/10 text-white">
-					<AlertDialogHeader>
-						<AlertDialogTitle>
-							{confirmAction?.type === "make-manager" &&
-								"Promote to Manager?"}
-							{confirmAction?.type === "make-admin" &&
-								"Promote to Admin?"}
-							{confirmAction?.type === "demote-manager" &&
-								"Demote to Manager?"}
-							{confirmAction?.type === "demote-user" &&
-								"Demote to User?"}
-						</AlertDialogTitle>
-						<AlertDialogDescription className="text-zinc-400">
-							{confirmAction?.type === "make-manager" &&
-								`${confirmAction.user.name} will gain access to Orders, Restock Queue, and Activity Log.`}
-							{confirmAction?.type === "make-admin" &&
-								`${confirmAction.user.name} will gain full system access including the Admin Panel.`}
-							{confirmAction?.type === "demote-manager" &&
-								`${confirmAction.user.name} will lose Admin Panel access and admin privileges.`}
-							{confirmAction?.type === "demote-user" &&
-								`${confirmAction.user.name} will lose access to Orders, Restock, Activity Log, and category permissions.`}
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<div className="flex justify-end gap-2 mt-2">
-						<AlertDialogCancel className="border-zinc-700 text-zinc-300">
-							Cancel
-						</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={() =>
-								confirmAction &&
-								promoteMutation.mutate({
-									type: confirmAction.type,
-									userId: confirmAction.user.id,
-								})
-							}
-							disabled={promoteMutation.isPending}
-							className="bg-indigo-600 hover:bg-indigo-500"
-						>
-							{promoteMutation.isPending && (
-								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-							)}
-							Confirm
-						</AlertDialogAction>
+				<ModalHeader>
+					<div className="mb-3">
+						{confirmAction?.type === "make-manager" &&
+							"Promote to Manager?"}
+						{confirmAction?.type === "make-admin" &&
+							"Promote to Admin?"}
+						{confirmAction?.type === "demote-manager" &&
+							"Demote to Manager?"}
+						{confirmAction?.type === "demote-user" &&
+							"Demote to User?"}
 					</div>
-				</AlertDialogContent>
-			</AlertDialog>
+					<div className="text-zinc-400">
+						{confirmAction?.type === "make-manager" &&
+							`${confirmAction.user.name} will gain access to Orders, Restock Queue, and Activity Log.`}
+						{confirmAction?.type === "make-admin" &&
+							`${confirmAction.user.name} will gain full system access including the Admin Panel.`}
+						{confirmAction?.type === "demote-manager" &&
+							`${confirmAction.user.name} will lose Admin Panel access and admin privileges.`}
+						{confirmAction?.type === "demote-user" &&
+							`${confirmAction.user.name} will lose access to Orders, Restock, Activity Log, and category permissions.`}
+					</div>
+				</ModalHeader>
+				<ModalFooter className="flex justify-end gap-2 mt-2">
+					<Button
+						onClick={() => setConfirmAction(null)}
+						className="w-full sm:w-auto bg-slate-600/70 hover:bg-slate-600"
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={() =>
+							confirmAction &&
+							promoteMutation.mutate({
+								type: confirmAction.type,
+								userId: confirmAction.user.id,
+							})
+						}
+						disabled={promoteMutation.isPending}
+						className="bg-indigo-600 hover:bg-indigo-500"
+					>
+						Confirm
+					</Button>
+				</ModalFooter>
+			</Modal>
 
 			{/* Role History Sheet */}
 			<Sheet

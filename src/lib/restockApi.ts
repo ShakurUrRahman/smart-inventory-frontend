@@ -39,16 +39,16 @@ export interface ResolveRestockPayload {
 
 export const restockApi = {
 	// Get restock queue items
-	getRestockQueue: async (params: {
+	getRestockQueue: async (params?: {
 		priority?: string;
 		page?: number;
 		limit?: number;
 	}): Promise<RestockQueueResponse> => {
 		try {
 			const query = new URLSearchParams();
-			if (params.priority) query.append("priority", params.priority);
-			if (params.page) query.append("page", params.page.toString());
-			if (params.limit) query.append("limit", params.limit.toString());
+			if (params?.priority) query.append("priority", params.priority);
+			if (params?.page) query.append("page", params.page.toString());
+			if (params?.limit) query.append("limit", params.limit.toString());
 
 			const response = await apiClient.get(
 				`/restock?${query.toString()}`,
