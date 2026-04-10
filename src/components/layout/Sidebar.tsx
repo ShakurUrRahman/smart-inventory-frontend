@@ -43,12 +43,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 	const pathname = usePathname();
 	const { user, clearUser } = useAuthStore();
 	const router = useRouter();
-	const {
-		canAccessAdminPanel,
-		canAccessOrders,
-		canAccessRestock,
-		canAccessActivity,
-	} = usePermissions();
+	const { canAccessAdminPanel, canAccessOrders, canAccessActivity } =
+		usePermissions();
 
 	useEffect(() => {
 		onClose();
@@ -88,19 +84,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 					},
 				]
 			: []),
-		// Restock — manager/admin/super_admin only
-		...(canAccessRestock
-			? [
-					{
-						label: "Restock Queue",
-						href: "/restock",
-						icon: <AlertTriangle className="w-5 h-5" />,
-						badge: restockCount,
-						badgeColor:
-							restockCount > 0 ? "bg-red-500" : "bg-zinc-600",
-					},
-				]
-			: []),
+
+		{
+			label: "Restock Queue",
+			href: "/restock",
+			icon: <AlertTriangle className="w-5 h-5" />,
+			badge: restockCount,
+			badgeColor: restockCount > 0 ? "bg-red-500" : "bg-zinc-600",
+		},
+
+		,
 		// Activity — manager/admin/super_admin only
 		...(canAccessActivity
 			? [

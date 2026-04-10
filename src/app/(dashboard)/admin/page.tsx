@@ -184,7 +184,9 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 				permissionLabels[variables.permission] || variables.permission;
 			const status = variables.value ? "enabled" : "disabled";
 
-			toast.success(`${label} permission ${status} for ${user.name}`);
+			toast.success(
+				`${label} category permission ${status} for ${user.name}`,
+			);
 		},
 
 		// 3. Error Handling

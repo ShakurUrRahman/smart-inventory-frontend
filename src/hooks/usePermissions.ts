@@ -19,7 +19,6 @@ const usePermissions = () => {
 		// ── Route access ───────────────────────────────────────────────────────
 		canAccessAdminPanel: ["admin", "super_admin"].includes(role),
 		canAccessOrders: ["manager", "admin", "super_admin"].includes(role),
-		canAccessRestock: ["manager", "admin", "super_admin"].includes(role),
 		canAccessActivity: ["manager", "admin", "super_admin"].includes(role),
 
 		// ── Category permissions ───────────────────────────────────────────────
