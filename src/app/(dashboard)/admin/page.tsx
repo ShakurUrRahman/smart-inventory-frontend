@@ -144,6 +144,7 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 	const queryClient = useQueryClient();
 
 	const updatePermsMutation = useMutation({
+		// 1. Function Call
 		mutationFn: ({
 			permission,
 			value,
@@ -152,25 +153,47 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 			value: boolean;
 		}) => updateCategoryPermissions(user._id, { [permission]: value }),
 
-		onSuccess: (_data, variables) => {
+		// 2. Success Handling (Optimistic Cache Update)
+		onSuccess: (updatedPermissions, variables) => {
+			// Manually patch the local cache so the UI updates instantly
+			queryClient.setQueryData(["admin-users"], (oldData: any) => {
+				if (!oldData) return oldData;
+
+				return {
+					...oldData,
+					// Map through users to find the specific one we just edited
+					users: oldData.users.map((u: any) =>
+						u._id === user._id
+							? { ...u, categoryPermissions: updatedPermissions }
+							: u,
+					),
+				};
+			});
+
+			// Background sync to ensure the server and client are 100% aligned
 			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
 
+			// Toast Notifications
 			const permissionLabels: Record<string, string> = {
 				canCreate: "Create",
 				canUpdate: "Update",
 				canDelete: "Delete",
 			};
 
-			// Use 'variables.permission' here
 			const label =
 				permissionLabels[variables.permission] || variables.permission;
 			const status = variables.value ? "enabled" : "disabled";
 
 			toast.success(`${label} permission ${status} for ${user.name}`);
 		},
+
+		// 3. Error Handling
 		onError: (error: any) => {
 			console.error("Permission update error:", error);
 			toast.error(error.message || "Failed to update permissions");
+
+			// Optional: Invalidate on error to roll back any optimistic UI changes
+			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
 		},
 	});
 
@@ -321,14 +344,24 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 												icon: "🗑️",
 											},
 										].map(({ key, label, icon }) => {
-											const checked =
+											const dbValue =
 												user.categoryPermissions?.[
 													key
 												] || false;
-											const isThisOneUpdating =
+
+											// 2. Check if this specific key is being mutated
+											const isThisOneMutating =
 												updatePermsMutation.isPending &&
 												updatePermsMutation.variables
 													?.permission === key;
+
+											// 3. IF mutating, show the 'target' value (variables.value)
+											// OTHERWISE, show the DB value
+											const displayValue =
+												isThisOneMutating
+													? updatePermsMutation
+															.variables.value
+													: dbValue;
 											return (
 												<div
 													key={key}
@@ -344,27 +377,25 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 																{
 																	permission:
 																		key,
-																	value: !checked,
+																	value: !dbValue,
 																},
 															)
 														}
 														disabled={
-															isThisOneUpdating
+															updatePermsMutation.isPending
 														}
-														className={`relative px-4 py-1 rounded-lg border-2 font-medium text-sm transition-all ${
-															checked
+														className={`relative px-4 py-1 rounded-lg border-2 font-medium text-sm transition-all flex items-center justify-center ${
+															dbValue
 																? "bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/30"
 																: "bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10"
 														} disabled:opacity-50 disabled:cursor-not-allowed`}
 													>
-														{isThisOneUpdating ? (
-															<Loader2 className="w-4 h-4 animate-spin mx-auto" />
+														{isThisOneMutating ? (
+															<Loader2 className="w-4 h-4 animate-spin" />
+														) : displayValue ? (
+															"ON"
 														) : (
-															<span>
-																{checked
-																	? "ON"
-																	: "OFF"}
-															</span>
+															"OFF"
 														)}
 													</button>
 												</div>
@@ -877,6 +908,7 @@ function PendingApprovals({ isLoadingProducts, products, totalPending }: any) {
 					</label>
 
 					<Textarea
+						spellCheck="false"
 						placeholder="Why is this product being rejected? Please provide specific details..."
 						value={rejectReason}
 						onChange={(e) => setRejectReason(e.target.value)}

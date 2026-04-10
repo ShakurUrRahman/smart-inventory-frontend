@@ -13,6 +13,12 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	X,
+	XCircle,
+	CheckCircle,
+	Clock,
+	AlertCircle,
+	Loader2,
+	Eye,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -36,12 +42,111 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Modal,
+	ModalBody,
+	ModalFooter,
+	ModalHeader,
+} from "@/components/shared/DialogModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import usePermissions from "@/hooks/usePermissions";
+
+function UserProductCard({
+	product,
+	onEdit,
+	onDelete,
+	isEditLoading,
+	isDeleteLoading,
+}: any) {
+	const approvalStatus = product.approvalStatus;
+
+	const borderClass =
+		approvalStatus === "pending"
+			? "border-amber-500/40 border-dashed"
+			: approvalStatus === "rejected"
+				? "border-red-500/40 border-dashed"
+				: "border-white/10";
+
+	const badge =
+		approvalStatus === "pending" ? (
+			<span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+				<Clock className="w-3 h-3" /> Pending Approval
+			</span>
+		) : approvalStatus === "rejected" ? (
+			<span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+				<XCircle className="w-3 h-3" /> Rejected
+			</span>
+		) : (
+			<span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+				<CheckCircle className="w-3 h-3" /> Approved
+			</span>
+		);
+
+	return (
+		<div
+			className={`bg-[#13161F] border ${borderClass} rounded-xl p-4 space-y-3`}
+		>
+			<div className="flex justify-between items-start gap-2">
+				<p className="text-white font-semibold truncate">
+					{product.name}
+				</p>
+				{badge}
+			</div>
+
+			<div className="text-xs text-zinc-400 space-y-1">
+				<p>
+					Category:{" "}
+					{typeof product.category === "object"
+						? product.category?.name
+						: product.category}
+				</p>
+				<p>
+					Price: ${product.price.toFixed(2)} · Stock: {product.stock}
+				</p>
+			</div>
+
+			{/* Rejection reason */}
+			{approvalStatus === "rejected" && product.rejectionReason && (
+				<div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-xs text-red-400">
+					<p className="font-medium mb-0.5">❌ Rejection Reason:</p>
+					<p className="text-red-300">{product.rejectionReason}</p>
+				</div>
+			)}
+
+			{/* Pending note */}
+			{approvalStatus === "pending" && (
+				<p className="text-xs text-zinc-500 italic">
+					Awaiting review by admin or manager
+				</p>
+			)}
+
+			<div className="flex items-center gap-2">
+				<button
+					onClick={() => onEdit(product)}
+					className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 text-xs transition"
+				>
+					<Pencil className="w-3.5 h-3.5" />
+					{approvalStatus === "rejected" ? "Edit & Resubmit" : "Edit"}
+				</button>
+				<button
+					onClick={() => onDelete(product)}
+					className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs transition"
+				>
+					<Trash2 className="w-3.5 h-3.5" />
+					Delete
+				</button>
+			</div>
+		</div>
+	);
+}
 
 export default function ProductsPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const queryClient = useQueryClient();
 	const { user } = useAuthStore();
+	const { isUser } = usePermissions();
+	const [userTab, setUserTab] = useState("approved");
 
 	// URL-synced filters
 	const [search, setSearch] = useState(searchParams.get("search") || "");
@@ -62,6 +167,11 @@ export default function ProductsPage() {
 	const [selectedProduct, setSelectedProduct] = useState<Product | null>(
 		null,
 	);
+	const [submittedProduct, setSubmittedProduct] = useState<Product | null>(
+		null,
+	);
+	const [rejectDialogProduct, setRejectDialogProduct] = useState<any>(null);
+	const [rejectReason, setRejectReason] = useState("");
 
 	const LIMIT = 10;
 
@@ -145,6 +255,47 @@ export default function ProductsPage() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
+	const approveMutation = useMutation({
+		mutationFn: (id: string) => adminApi.approveProduct(id),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["products"] });
+			toast.success("Product approved!");
+		},
+		onError: (error: Error) => toast.error(error.message),
+	});
+
+	const rejectMutation = useMutation({
+		mutationFn: (id: string) =>
+			adminApi.rejectProduct(id, { reason: rejectReason }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["products"] });
+			setRejectDialogProduct(null);
+			setRejectReason("");
+			toast.success("Product rejected.");
+		},
+		onError: (error: Error) => toast.error(error.message),
+	});
+
+	const products = productsData?.data || [];
+	const total = productsData?.total || 0;
+	const totalPages = productsData?.totalPages || 1;
+	const isEmpty = products.length === 0 && !isLoading;
+
+	const userProducts = useMemo(
+		() => ({
+			approved: products.filter(
+				(p: any) => p.approvalStatus === "approved",
+			),
+			pending: products.filter(
+				(p: any) => p.approvalStatus === "pending",
+			),
+			rejected: products.filter(
+				(p: any) => p.approvalStatus === "rejected",
+			),
+		}),
+		[products],
+	);
+
 	const handleAddProduct = (payload: any) =>
 		createMutation.mutateAsync(payload);
 	const handleEditProduct = (payload: any) => {
@@ -180,10 +331,477 @@ export default function ProductsPage() {
 		setDeleteDialogOpen(true);
 	};
 
-	const products = productsData?.data || [];
-	const total = productsData?.total || 0;
-	const totalPages = productsData?.totalPages || 1;
-	const isEmpty = products.length === 0 && !isLoading;
+	console.log(userProducts);
+
+	if (isUser) {
+		return (
+			<motion.div
+				initial={{ opacity: 0, y: 12 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+			>
+				<PageHeader
+					title="My Products"
+					subtitle={`${total} product${total !== 1 ? "s" : ""} submitted`}
+					action={
+						<Button
+							onClick={() => setAddDialogOpen(true)}
+							className="bg-indigo-600 hover:bg-indigo-500 gap-2"
+						>
+							<Plus className="w-4 h-4" />
+							<span className="hidden sm:inline">
+								Submit Product
+							</span>
+						</Button>
+					}
+				/>
+
+				{/* Status Filter Tabs */}
+				<div className="bg-[#13161F] border border-white/10 rounded-xl p-4 mb-6">
+					<div className="flex flex-wrap gap-2">
+						{[
+							{
+								value: "approved",
+								label: "Approved",
+								icon: "✅",
+								count: userProducts.approved.length,
+								activeClass: "bg-emerald-600 text-white",
+							},
+							{
+								value: "pending",
+								label: "Pending",
+								icon: "⏳",
+								count: userProducts.pending.length,
+								activeClass: "bg-amber-600 text-white",
+							},
+							{
+								value: "rejected",
+								label: "Rejected",
+								icon: "❌",
+								count: userProducts.rejected.length,
+								activeClass: "bg-red-600 text-white",
+							},
+						].map((tab) => (
+							<button
+								key={tab.value}
+								onClick={() => setUserTab(tab.value)}
+								className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+									userTab === tab.value
+										? tab.activeClass
+										: "bg-[#1C1F2A] border border-zinc-700/60 text-zinc-300 hover:bg-white/10"
+								}`}
+							>
+								{tab.icon} {tab.label}
+								<span
+									className={`text-xs px-1.5 py-0.5 rounded-full ${
+										userTab === tab.value
+											? "bg-white/20 text-white"
+											: "bg-white/10 text-zinc-400"
+									}`}
+								>
+									{tab.count}
+								</span>
+							</button>
+						))}
+					</div>
+				</div>
+
+				{/* Content */}
+				{(["approved", "pending", "rejected"] as const).map((tab) => {
+					if (userTab !== tab) return null;
+
+					return (
+						<div key={tab}>
+							{isLoading ? (
+								<SkeletonGrid count={4} variant="card" />
+							) : userProducts[tab].length === 0 ? (
+								<div className="flex flex-col items-center justify-center py-16 px-4">
+									<div className="text-center">
+										<div className="text-5xl mb-4">📦</div>
+										<h3 className="text-lg font-semibold text-white mb-2">
+											No {tab} products yet
+										</h3>
+										<p className="text-zinc-400 mb-6 text-sm">
+											{tab === "approved"
+												? "Approved products will appear here."
+												: tab === "pending"
+													? "Products awaiting review will appear here."
+													: "Rejected products will appear here."}
+										</p>
+										{tab !== "approved" && (
+											<Button
+												onClick={() =>
+													setAddDialogOpen(true)
+												}
+												className="bg-indigo-600 hover:bg-indigo-500 gap-2"
+											>
+												<Plus className="w-4 h-4" />
+												Submit a Product
+											</Button>
+										)}
+									</div>
+								</div>
+							) : (
+								<div className="lg:bg-[#13161F] lg:border lg:border-white/10 rounded-xl overflow-hidden">
+									{/* Desktop Table */}
+									<div className="hidden lg:block overflow-x-auto">
+										<table className="w-full text-sm min-w-[640px]">
+											<thead>
+												<tr className="border-b border-white/10 bg-black/20">
+													<th className="px-3 py-3 text-left font-semibold text-zinc-300 w-10">
+														#
+													</th>
+													<th className="px-3 py-3 text-left font-semibold text-zinc-300">
+														Product Name
+													</th>
+													<th className="px-3 py-3 text-left font-semibold text-zinc-300 hidden sm:table-cell">
+														Category
+													</th>
+													<th className="px-3 py-3 text-left font-semibold text-zinc-300">
+														Price
+													</th>
+													<th className="px-3 py-3 text-left font-semibold text-zinc-300">
+														Stock
+													</th>
+													<th className="px-3 py-3 text-left font-semibold text-zinc-300 hidden md:table-cell">
+														Threshold
+													</th>
+													<th className="px-3 py-3 text-left font-semibold text-zinc-300">
+														Status
+													</th>
+													<th className="px-3 py-3 text-left font-semibold text-zinc-300">
+														Actions
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{userProducts[tab].map(
+													(
+														product: any,
+														idx: number,
+													) => {
+														const isLowStock =
+															product.stock > 0 &&
+															product.stock <=
+																product.minStockThreshold;
+														const isOutOfStock =
+															product.stock === 0;
+
+														const approvalBadge = {
+															approved: {
+																label: "Approved",
+																className:
+																	"bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+															},
+															pending: {
+																label: "Pending",
+																className:
+																	"bg-amber-500/20 text-amber-400 border-amber-500/30",
+															},
+															rejected: {
+																label: "Rejected",
+																className:
+																	"bg-red-500/20 text-red-400 border-red-500/30",
+															},
+														}[
+															product
+																.approvalStatus
+														] ?? {
+															label: product.approvalStatus,
+															className:
+																"bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+														};
+
+														return (
+															<tr
+																key={
+																	product._id
+																}
+																className="border-b border-white/5 hover:bg-white/5"
+															>
+																<td className="px-3 py-3 text-zinc-400 text-xs">
+																	{idx + 1}
+																</td>
+																<td className="px-3 py-3 text-white font-medium">
+																	{
+																		product.name
+																	}
+																</td>
+																<td className="px-3 py-3 text-zinc-400 hidden sm:table-cell">
+																	{typeof product.category ===
+																	"string"
+																		? product.category
+																		: product
+																				.category
+																				?.name}
+																</td>
+																<td className="px-3 py-3 text-white">
+																	$
+																	{product.price.toFixed(
+																		2,
+																	)}
+																</td>
+																<td
+																	className={`px-3 py-3 font-medium ${isOutOfStock ? "text-red-400" : isLowStock ? "text-amber-400" : "text-green-400"}`}
+																>
+																	{
+																		product.stock
+																	}
+																</td>
+																<td className="px-3 py-3 text-zinc-400 hidden md:table-cell">
+																	{
+																		product.minStockThreshold
+																	}
+																</td>
+																<td className="px-3 py-3">
+																	<span
+																		className={`px-2 py-1 rounded-full text-xs font-medium border ${approvalBadge.className}`}
+																	>
+																		{
+																			approvalBadge.label
+																		}
+																	</span>
+																</td>
+																<td className="px-3 py-3">
+																	<div className="flex items-center gap-1.5">
+																		<button
+																			onClick={() =>
+																				handleEditClick(
+																					product,
+																				)
+																			}
+																			className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition"
+																			title="Edit"
+																		>
+																			<Pencil className="w-4 h-4" />
+																		</button>
+																		<button
+																			onClick={() =>
+																				handleDeleteClick(
+																					product,
+																				)
+																			}
+																			className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
+																			title="Delete"
+																		>
+																			<Trash2 className="w-4 h-4" />
+																		</button>
+																		{product.approvalStatus ===
+																			"rejected" &&
+																			product.rejectionReason && (
+																				<button
+																					onClick={() =>
+																						setRejectReason(
+																							product.rejectionReason,
+																						)
+																					}
+																					className="p-1.5 rounded hover:bg-zinc-500/20 text-zinc-400 hover:text-white transition"
+																					title="View rejection reason"
+																				>
+																					<Eye className="w-4 h-4" />
+																				</button>
+																			)}
+																	</div>
+																</td>
+															</tr>
+														);
+													},
+												)}
+											</tbody>
+										</table>
+									</div>
+
+									{/* Mobile Cards */}
+									<div className="block lg:hidden space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 p-3">
+										{userProducts[tab].map(
+											(product: any) => {
+												const isLowStock =
+													product.stock > 0 &&
+													product.stock <=
+														product.minStockThreshold;
+												const isOutOfStock =
+													product.stock === 0;
+
+												const approvalBadge = {
+													approved: {
+														label: "Approved",
+														className:
+															"bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+													},
+													pending: {
+														label: "Pending",
+														className:
+															"bg-amber-500/20 text-amber-400 border-amber-500/30",
+													},
+													rejected: {
+														label: "Rejected",
+														className:
+															"bg-red-500/20 text-red-400 border-red-500/30",
+													},
+												}[product.approvalStatus] ?? {
+													label: product.approvalStatus,
+													className:
+														"bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+												};
+
+												return (
+													<div
+														key={product._id}
+														className="bg-[#1b1e28] p-4 rounded-xl space-y-2"
+													>
+														<div className="flex justify-between items-start gap-2">
+															<p className="text-white font-semibold text-sm">
+																{product.name}
+															</p>
+															<span
+																className={`px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${approvalBadge.className}`}
+															>
+																{
+																	approvalBadge.label
+																}
+															</span>
+														</div>
+														<p className="text-zinc-400 text-xs">
+															{typeof product.category ===
+															"string"
+																? product.category
+																: product
+																		.category
+																		?.name}
+														</p>
+														<div className="flex items-center gap-4">
+															<p className="text-white text-sm">
+																$
+																{product.price.toFixed(
+																	2,
+																)}
+															</p>
+															<p
+																className={`text-sm font-medium ${isOutOfStock ? "text-red-400" : isLowStock ? "text-amber-400" : "text-green-400"}`}
+															>
+																Stock:{" "}
+																{product.stock}
+																{isOutOfStock &&
+																	" (Out)"}
+																{isLowStock &&
+																	!isOutOfStock &&
+																	" (Low)"}
+															</p>
+														</div>
+														{/* Rejection reason */}
+														{product.approvalStatus ===
+															"rejected" &&
+															product.rejectionReason && (
+																<p className="text-red-400/80 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+																	Reason:{" "}
+																	{
+																		product.rejectionReason
+																	}
+																</p>
+															)}
+														<div className="flex gap-2 mt-1">
+															<button
+																onClick={() =>
+																	handleEditClick(
+																		product,
+																	)
+																}
+																className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition"
+															>
+																<Pencil className="w-4 h-4" />
+															</button>
+															<button
+																onClick={() =>
+																	handleDeleteClick(
+																		product,
+																	)
+																}
+																className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
+															>
+																<Trash2 className="w-4 h-4" />
+															</button>
+														</div>
+													</div>
+												);
+											},
+										)}
+									</div>
+								</div>
+							)}
+						</div>
+					);
+				})}
+
+				{/* Submitted Success Modal */}
+
+				{/* Edit Dialog */}
+				<AddEditProductDialog
+					open={editDialogOpen}
+					onOpenChange={(open) => {
+						if (!open) {
+							setEditDialogOpen(false);
+							setSelectedProduct(null);
+						}
+					}}
+					product={selectedProduct}
+					categories={categories}
+					onSubmit={(payload: any) => {
+						if (selectedProduct)
+							updateMutation.mutateAsync({
+								id: selectedProduct._id,
+								payload,
+							});
+					}}
+					isLoading={updateMutation.isPending}
+					warningBanner={
+						selectedProduct?.approvalStatus === "approved" ? (
+							<div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs mb-4">
+								<AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+								Editing an approved product will reset it to
+								pending and require re-approval.
+							</div>
+						) : selectedProduct?.approvalStatus === "rejected" ? (
+							<div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs mb-4">
+								<AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+								Updating this product will resubmit it for
+								approval.
+							</div>
+						) : null
+					}
+				/>
+
+				{/* Add Dialog */}
+				<AddEditProductDialog
+					open={addDialogOpen}
+					onOpenChange={(open) => {
+						if (!open) setAddDialogOpen(false);
+					}}
+					product={null}
+					categories={categories}
+					onSubmit={(payload: any) =>
+						createMutation.mutateAsync(payload)
+					}
+					isLoading={createMutation.isPending}
+				/>
+
+				{/* Delete Dialog */}
+				{selectedProduct && (
+					<DeleteProductDialog
+						open={deleteDialogOpen}
+						onOpenChange={setDeleteDialogOpen}
+						onConfirm={async () => {
+							await deleteMutation.mutateAsync(
+								selectedProduct._id,
+							);
+							setSelectedProduct(null);
+						}}
+						productName={selectedProduct.name}
+						isLoading={deleteMutation.isPending}
+					/>
+				)}
+			</motion.div>
+		);
+	}
 
 	return (
 		<motion.div

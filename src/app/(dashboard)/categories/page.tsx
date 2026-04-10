@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Package, Pencil } from "lucide-react";
+import { Plus, Trash2, Package, Pencil, Info, X } from "lucide-react";
 import { SkeletonGrid } from "@/components/shared/Skeleton";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
 import { UpdateCategoryDialog } from "@/components/categories/UpdateCategoryDialog";
@@ -13,10 +13,13 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { DeleteCategoryDialog } from "@/components/categories/DeleteCategoryDialog";
 import { useAuthStore } from "@/store/authStore";
+import usePermissions from "@/hooks/usePermissions";
 
 export default function CategoriesPage() {
 	const queryClient = useQueryClient();
 	const { user } = useAuthStore();
+	const { isUser, canCreateCategory, canUpdateCategory, canDeleteCategory } =
+		usePermissions();
 
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -24,22 +27,11 @@ export default function CategoriesPage() {
 	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
 		null,
 	);
+	const [bannerDismissed, setBannerDismissed] = useState(true);
 
 	// ─── Permission checks ────────────────────────────────────────────────────
 	const isAdminOrSuper =
 		user?.role === "admin" || user?.role === "super_admin";
-
-	const canCreate =
-		isAdminOrSuper ||
-		(user?.role === "manager" && user?.categoryPermissions?.canCreate);
-
-	const canUpdate =
-		isAdminOrSuper ||
-		(user?.role === "manager" && user?.categoryPermissions?.canUpdate);
-
-	const canDelete =
-		isAdminOrSuper ||
-		(user?.role === "manager" && user?.categoryPermissions?.canDelete);
 
 	// ─── Queries ──────────────────────────────────────────────────────────────
 	const { data: categories = [], isLoading } = useQuery({
@@ -120,7 +112,7 @@ export default function CategoriesPage() {
 				title="Categories"
 				subtitle="Organize your products with categories"
 				action={
-					canCreate ? (
+					canCreateCategory ? (
 						<Button
 							onClick={() => setAddDialogOpen(true)}
 							className="bg-indigo-600 hover:bg-indigo-500 gap-2"
@@ -134,6 +126,27 @@ export default function CategoriesPage() {
 				}
 			/>
 
+			{isUser && bannerDismissed && (
+				<motion.div
+					initial={{ opacity: 0, y: -8 }}
+					animate={{ opacity: 1, y: 0 }}
+					exit={{ opacity: 0, y: -8 }}
+					className="flex items-start gap-3 px-4 py-3 mb-6 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm text-blue-300"
+				>
+					<Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-400" />
+					<p className="flex-1">
+						You can browse categories but cannot create, edit, or
+						delete them.
+					</p>
+					<button
+						onClick={() => setBannerDismissed(false)}
+						className="text-blue-400 hover:text-blue-200 transition-colors flex-shrink-0"
+					>
+						<X className="w-4 h-4" />
+					</button>
+				</motion.div>
+			)}
+
 			{/* Loading State */}
 			{isLoading && <SkeletonGrid count={6} variant="card" />}
 
@@ -146,11 +159,11 @@ export default function CategoriesPage() {
 							No categories yet
 						</h3>
 						<p className="text-zinc-400 mb-6">
-							{canCreate
+							{canCreateCategory
 								? "Create your first category to organize your products."
 								: "No categories have been created yet."}
 						</p>
-						{canCreate && (
+						{canCreateCategory && (
 							<Button
 								onClick={() => setAddDialogOpen(true)}
 								className="bg-indigo-600 hover:bg-indigo-500 gap-2"
@@ -193,9 +206,10 @@ export default function CategoriesPage() {
 											</div>
 
 											{/* Action buttons */}
-											{(canUpdate || canDelete) && (
+											{(canUpdateCategory ||
+												canDeleteCategory) && (
 												<div className="flex items-center gap-1 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-													{canUpdate && (
+													{canUpdateCategory && (
 														<button
 															onClick={() =>
 																handleEditClick(
@@ -211,7 +225,7 @@ export default function CategoriesPage() {
 															<Pencil className="w-4 h-4" />
 														</button>
 													)}
-													{canDelete && (
+													{canDeleteCategory && (
 														<button
 															onClick={() =>
 																handleDeleteClick(
@@ -245,7 +259,7 @@ export default function CategoriesPage() {
 			)}
 
 			{/* Dialogs */}
-			{canCreate && (
+			{canCreateCategory && (
 				<AddCategoryDialog
 					open={addDialogOpen}
 					onOpenChange={setAddDialogOpen}
@@ -254,7 +268,7 @@ export default function CategoriesPage() {
 				/>
 			)}
 
-			{canUpdate && (
+			{canUpdateCategory && (
 				<UpdateCategoryDialog
 					open={updateDialogOpen}
 					onOpenChange={setUpdateDialogOpen}
@@ -264,7 +278,7 @@ export default function CategoriesPage() {
 				/>
 			)}
 
-			{canDelete && selectedCategory && (
+			{canDeleteCategory && selectedCategory && (
 				<DeleteCategoryDialog
 					open={deleteDialogOpen}
 					onOpenChange={setDeleteDialogOpen}
