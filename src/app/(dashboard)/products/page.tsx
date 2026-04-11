@@ -277,7 +277,9 @@ export default function ProductsPage() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const products = productsData?.data || [];
+	const products = useMemo(() => {
+		return productsData?.data || [];
+	}, [productsData]);
 	const total = productsData?.total || 0;
 	const totalPages = productsData?.totalPages || 1;
 	const isEmpty = products.length === 0 && !isLoading;

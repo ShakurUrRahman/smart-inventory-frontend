@@ -134,27 +134,58 @@ export default function DashboardPage() {
 
 	if (statsLoading) {
 		return (
-			<>
+			<div className="space-y-8 animate-in fade-in duration-500">
 				<PageHeader title="Dashboard" subtitle="Inventory overview" />
-				{/* ROW 1: 4 stat cards */}
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+				{/* ROW 1: 4 Stat Cards (Total Products, Pending Orders, Low Stock, Revenue) */}
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 					{[...Array(4)].map((_, idx) => (
-						<SkeletonGrid key={idx} count={1} variant="card" />
+						<div
+							key={idx}
+							className="h-[120px] w-full bg-[#13161F] border border-white/5 rounded-xl p-6 relative overflow-hidden"
+						>
+							{/* Simulating the card content structure */}
+							<div className="space-y-3">
+								<div className="h-4 w-24 bg-white/5 rounded animate-pulse" />
+								<div className="h-8 w-12 bg-white/10 rounded animate-pulse" />
+								<div className="h-3 w-32 bg-white/5 rounded animate-pulse" />
+							</div>
+							{/* Icon placeholder */}
+							<div className="absolute top-6 right-6 h-10 w-10 bg-white/5 rounded-lg animate-pulse" />
+						</div>
 					))}
 				</div>
-				{/* ROW 2: 3 chart cards */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-					<SkeletonGrid count={1} variant="card" />
-					<SkeletonGrid count={1} variant="card" />
-					<SkeletonGrid count={1} variant="card" />
-					<SkeletonGrid count={1} variant="card" />
+
+				{/* ROW 2: 2 Chart Cards (Orders vs Revenue) */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					{[...Array(2)].map((_, idx) => (
+						<div
+							key={idx}
+							className="h-[400px] w-full bg-[#13161F] border border-white/5 rounded-xl p-6"
+						>
+							<div className="h-6 w-48 bg-white/10 rounded mb-8 animate-pulse" />
+							<div className="w-full h-[280px] flex items-end gap-3 px-2">
+								{/* Visualizing bar chart skeletons */}
+								{[...Array(7)].map((_, i) => (
+									<div
+										key={i}
+										className="flex-1 bg-white/5 rounded-t-sm animate-pulse"
+										style={{
+											height: `${Math.floor(Math.random() * 60) + 20}%`,
+										}}
+									/>
+								))}
+							</div>
+						</div>
+					))}
 				</div>
-				{/* ROW 3: Product summary + Activity */}
+
+				{/* ROW 3: Product summary + Recent Activity (Optional but aligns with layout) */}
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					<SkeletonGrid count={1} variant="card" />
-					<SkeletonGrid count={1} variant="card" />
+					<div className="lg:col-span-2 h-[350px] bg-[#13161F] border border-white/5 rounded-xl animate-pulse" />
+					<div className="h-[350px] bg-[#13161F] border border-white/5 rounded-xl animate-pulse" />
 				</div>
-			</>
+			</div>
 		);
 	}
 
@@ -488,13 +519,13 @@ export default function DashboardPage() {
 				</motion.div>
 			</div>
 
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+			<div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 				{/* Product Summary Table (66%) */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.6 }}
-					className="lg:col-span-2 bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur flex flex-col h-[420px]"
+					className="lg:col-span-3 bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur flex flex-col h-[420px]"
 				>
 					<div className="flex items-center justify-between mb-6 flex-shrink-0">
 						{" "}
@@ -565,7 +596,7 @@ export default function DashboardPage() {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.7 }}
-					className="bg-[#13161F] border border-white/10 rounded-2xl p-6 backdrop-blur flex flex-col h-[420px]"
+					className="bg-[#13161F] lg:col-span-2 border border-white/10 rounded-2xl p-6 backdrop-blur flex flex-col h-[420px]"
 				>
 					<div className="flex items-center justify-between mb-6 flex-shrink-0">
 						{" "}

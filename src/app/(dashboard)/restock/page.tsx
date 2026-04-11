@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowUp, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Button } from "@/components/ui/button";
 import { SkeletonGrid } from "@/components/shared/Skeleton";
 import { restockApi, RestockQueueItem } from "@/lib/restockApi";
+import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -16,23 +16,66 @@ import {
 	RemoveConfirmDialog,
 } from "@/components/restock/RestockModals";
 
-const PRIORITY_COLORS: Record<string, string> = {
-	High: "bg-red-500/20 text-red-400 border-red-500/30",
-	Medium: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-	Low: "bg-green-500/20 text-green-400 border-green-500/30", // was blue
-};
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-// ✅ Match emoji to colors
 const PRIORITY_ICONS: Record<string, string> = {
 	High: "🔴",
 	Medium: "🟡",
 	Low: "🟢",
 };
 
+const LIMIT = 10;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const getStockPercentage = (current: number, threshold: number) =>
+	Math.min((current / threshold) * 100, 100);
+
+const getProgressBarColor = (percentage: number) => {
+	if (percentage <= 30) return "bg-red-500";
+	if (percentage <= 65) return "bg-amber-500";
+	return "bg-green-500";
+};
+
+const getPriorityStyle = (percentage: number) => {
+	if (percentage <= 30)
+		return {
+			badge: "bg-red-500/20 text-red-400 border-red-500/30",
+			icon: "🔴",
+		};
+	if (percentage <= 65)
+		return {
+			badge: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+			icon: "🟡",
+		};
+	return {
+		badge: "bg-green-500/20 text-green-400 border-green-500/30",
+		icon: "🟢",
+	};
+};
+
+const formatRelativeTime = (dateString: string) => {
+	const date = new Date(dateString);
+	const now = new Date();
+	const diff = now.getTime() - date.getTime();
+	const minutes = Math.floor(diff / 60000);
+	const hours = Math.floor(diff / 3600000);
+	const days = Math.floor(diff / 86400000);
+	if (minutes < 60) return `${minutes}m ago`;
+	if (hours < 24) return `${hours}h ago`;
+	if (days < 7) return `${days}d ago`;
+	return date.toLocaleDateString();
+};
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function RestockPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const queryClient = useQueryClient();
+	const { user } = useAuthStore();
+
+	const isUser = user?.role === "user";
 
 	// State
 	const [priorityFilter, setPriorityFilter] = useState(
@@ -47,8 +90,6 @@ export default function RestockPage() {
 	const [restockModalOpen, setRestockModalOpen] = useState(false);
 	const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
 
-	const LIMIT = 10;
-
 	// Update URL
 	const updateUrl = (newPriority: string, newPage: number) => {
 		const params = new URLSearchParams();
@@ -57,42 +98,31 @@ export default function RestockPage() {
 		router.push(`/restock?${params.toString()}`);
 	};
 
-	// Fetch restock queue
-	const { data: allQueueData, isLoading } = useQuery({
-		queryKey: ["restock"], // No filter!
-		queryFn: () => restockApi.getRestockQueue(), // No params!
+	// ── Fetch filtered data (for table) ───────────────────────────────────────
+	const { data: queueData, isLoading } = useQuery({
+		queryKey: ["restock", { priorityFilter, page }],
+		queryFn: () =>
+			restockApi.getRestockQueue({
+				priority: priorityFilter || undefined,
+				page,
+				limit: LIMIT,
+			}),
 	});
 
-	useEffect(() => {
-		console.log("restockApi:", restockApi);
-		console.log(
-			"getRestockQueue exists?",
-			typeof restockApi?.getRestockQueue,
-		);
-	}, []);
+	// ── Fetch all data (for priority counts — unaffected by filter) ───────────
+	const { data: allQueueData } = useQuery({
+		queryKey: ["restock-all-counts"],
+		queryFn: () => restockApi.getRestockQueue({ limit: 1000 }),
+		staleTime: 30000, // 30 seconds
+	});
 
-	// Filter locally based on tab selection
-	const filteredItems = useMemo(() => {
-		let filtered = allQueueData?.data || [];
+	// Data
+	const items = queueData?.data || [];
+	const total = queueData?.total || 0;
+	const totalPages = queueData?.totalPages || 1;
+	const isEmpty = items.length === 0 && !isLoading;
 
-		if (priorityFilter) {
-			filtered = filtered.filter(
-				(item) => item.priority === priorityFilter,
-			);
-		}
-
-		return filtered.filter((item) => !item.isResolved);
-	}, [allQueueData?.data, priorityFilter]);
-
-	// Paginate
-	const paginatedItems = useMemo(() => {
-		const startIdx = (page - 1) * LIMIT;
-		return filteredItems.slice(startIdx, startIdx + LIMIT);
-	}, [filteredItems, page]);
-
-	const totalPages = Math.ceil(filteredItems.length / LIMIT);
-
-	// ✅ NEVER changes - stays stable forever
+	// Priority counts from the unfiltered query
 	const priorityCounts = allQueueData?.priorityCounts || {
 		All: 0,
 		High: 0,
@@ -100,81 +130,37 @@ export default function RestockPage() {
 		Low: 0,
 	};
 
-	// Update data
-	const items = paginatedItems;
-	const total = filteredItems.length;
-	const isEmpty = filteredItems.length === 0 && !isLoading;
-
-	// Mutations
+	// ── Mutations ─────────────────────────────────────────────────────────────
 	const resolveMutation = useMutation({
-		mutationFn: ({ id, quantity }: any) =>
+		mutationFn: ({ id, quantity }: { id: string; quantity: number }) =>
 			restockApi.resolveRestockItem(id, { quantity }),
-		onSuccess: (data) => {
+		onSuccess: (data: any) => {
 			queryClient.invalidateQueries({ queryKey: ["restock"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-all-counts"] });
 			queryClient.invalidateQueries({ queryKey: ["products"] });
 			queryClient.invalidateQueries({ queryKey: ["restock-count"] });
 			setRestockModalOpen(false);
-			const product = data.queueItem?.product || {};
-			toast.success(
-				`${product.name} restocked! Stock updated successfully.`,
-			);
+			setSelectedItem(null);
+			const productName = data?.queueItem?.product?.name || "Product";
+			toast.success(`${productName} restocked successfully!`);
 		},
-		onError: (error: Error) => {
-			toast.error(error.message);
-		},
+		onError: (error: Error) => toast.error(error.message),
 	});
 
 	const removeMutation = useMutation({
 		mutationFn: (id: string) => restockApi.removeFromQueue(id),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["restock"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-all-counts"] });
 			queryClient.invalidateQueries({ queryKey: ["restock-count"] });
 			setRemoveConfirmOpen(false);
+			setSelectedItem(null);
 			toast.success("Item removed from queue");
 		},
-		onError: (error: Error) => {
-			toast.error(error.message);
-		},
+		onError: (error: Error) => toast.error(error.message),
 	});
 
-	// Get priority counts
-	// const priorityCounts = queueData?.priorityCounts || {
-	// 	All: 0,
-	// 	High: 0,
-	// 	Medium: 0,
-	// 	Low: 0,
-	// };
-
-	// // Data
-	// const items = queueData?.data || [];
-	// const total = queueData?.total || 0;
-	// const totalPages = queueData?.totalPages || 1;
-	// const isEmpty = items.length === 0 && !isLoading;
-
-	const formatRelativeTime = (dateString: string) => {
-		const date = new Date(dateString);
-		const now = new Date();
-		const diff = now.getTime() - date.getTime();
-		const minutes = Math.floor(diff / 60000);
-		const hours = Math.floor(diff / 3600000);
-		const days = Math.floor(diff / 86400000);
-
-		if (minutes < 60) return `${minutes}m ago`;
-		if (hours < 24) return `${hours}h ago`;
-		if (days < 7) return `${days}d ago`;
-		return date.toLocaleDateString();
-	};
-
-	const getStockPercentage = (current: number, threshold: number) => {
-		return Math.min((current / threshold) * 100, 100);
-	};
-
-	const getProgressBarColor = (percentage: number) => {
-		if (percentage <= 30) return "bg-red-500";
-		if (percentage <= 65) return "bg-amber-500";
-		return "bg-green-500"; // was bg-yellow-500
-	};
-
+	// ── Handlers ──────────────────────────────────────────────────────────────
 	const handleRestockClick = (item: RestockQueueItem) => {
 		setSelectedItem(item);
 		setRestockModalOpen(true);
@@ -187,30 +173,26 @@ export default function RestockPage() {
 
 	const handleResolveRestock = (quantity: number) => {
 		if (selectedItem) {
-			resolveMutation.mutateAsync({ id: selectedItem._id, quantity });
+			resolveMutation.mutate({ id: selectedItem._id, quantity });
 		}
 	};
 
 	const handleRemoveConfirm = async () => {
 		if (selectedItem) {
 			await removeMutation.mutateAsync(selectedItem._id);
-			setSelectedItem(null);
 		}
 	};
 
-	// Get everything at once
-	// const percentage = getStockPercentage(currentStock, threshold);
-	// const colors = getStockLevelColors(currentStock, threshold);
-	// const status = getStockStatus(percentage);
-
-	// // Or use the combined function
-	// const stock = getStockInfo(currentStock, threshold);
-
+	// ── Render ────────────────────────────────────────────────────────────────
 	return (
 		<>
 			<PageHeader
-				title="Restock Queue"
-				subtitle="Products running low on stock"
+				title={isUser ? "My Product Restocks" : "Restock Queue"}
+				subtitle={
+					isUser
+						? "Restock alerts for your submitted products"
+						: "Products running low on stock"
+				}
 				action={
 					total > 0 && (
 						<div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 text-red-400 rounded-full border border-red-500/30 text-sm font-medium">
@@ -221,6 +203,7 @@ export default function RestockPage() {
 				}
 			/>
 
+			{/* Priority Filter Tabs */}
 			<div className="relative flex gap-2 sm:gap-3 mb-6 border-b border-white/10 pb-2 overflow-x-auto whitespace-nowrap hide-scrollbar">
 				{["All", "High", "Medium", "Low"].map((priority) => {
 					const value = priority === "All" ? "" : priority;
@@ -236,13 +219,13 @@ export default function RestockPage() {
 							}}
 							whileHover={{ scale: 1.05 }}
 							whileTap={{ scale: 0.95 }}
-							className={`relative px-4 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-3 text-sm sm:text-base ${
+							className={`relative px-4 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-2 text-sm sm:text-base ${
 								isActive
 									? "text-indigo-400"
 									: "text-zinc-400 hover:text-zinc-300"
 							}`}
 						>
-							{/* 🔥 Animated Sliding Indicator */}
+							{/* Animated sliding indicator */}
 							{isActive && (
 								<motion.span
 									layoutId="tab-indicator"
@@ -255,13 +238,18 @@ export default function RestockPage() {
 								/>
 							)}
 
-							{/* Content */}
 							{priority !== "All" && PRIORITY_ICONS[priority]}
 							{priority}
 
-							{priorityCounts[priority] > 0 && (
+							{priorityCounts[
+								priority as keyof typeof priorityCounts
+							] > 0 && (
 								<span className="text-xs bg-white/10 px-2 py-1 rounded-full">
-									{priorityCounts[priority]}
+									{
+										priorityCounts[
+											priority as keyof typeof priorityCounts
+										]
+									}
 								</span>
 							)}
 						</motion.button>
@@ -278,17 +266,19 @@ export default function RestockPage() {
 							All stocked up!
 						</h3>
 						<p className="text-zinc-400">
-							No products are below their minimum threshold.
+							{isUser
+								? "None of your products are below the minimum threshold."
+								: "No products are below their minimum threshold."}
 						</p>
 					</div>
 				</div>
 			)}
 
-			{/* Restock Queue Table */}
+			{/* Table */}
 			{(!isEmpty || isLoading) && (
 				<div className="lg:bg-[#13161F] lg:border lg:border-white/10 rounded-xl overflow-hidden">
-					{/* Mobile View */}
-					<div className="block lg:hidden space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
+					{/* Mobile Cards */}
+					<div className="block lg:hidden space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 p-3 lg:p-0">
 						{isLoading ? (
 							<SkeletonGrid />
 						) : (
@@ -299,41 +289,34 @@ export default function RestockPage() {
 								);
 								const barColor =
 									getProgressBarColor(percentage);
+								const priorityStyle =
+									getPriorityStyle(percentage);
 
 								return (
 									<div
 										key={item._id}
 										className="bg-[#13161F] border border-white/10 rounded-xl p-4 space-y-3"
 									>
-										{/* Header */}
 										<div className="flex justify-between items-center">
 											<p className="text-white font-semibold">
 												{item.product.name}
 											</p>
-
 											<span
-												className={`text-xs px-2 py-1 rounded-full border ${
-													PRIORITY_COLORS[
-														item.priority
-													]
-												}`}
+												className={`text-xs px-2 py-1 rounded-full border ${priorityStyle.badge}`}
 											>
-												{PRIORITY_ICONS[item.priority]}{" "}
+												{priorityStyle.icon}{" "}
 												{item.priority}
 											</span>
 										</div>
 
-										{/* Category */}
 										<p className="text-sm text-zinc-400">
 											{item.product.category?.name || "—"}
 										</p>
 
-										{/* Stock */}
 										<div>
 											<p className="text-red-400 font-bold text-lg">
 												{item.currentStock}
 											</p>
-
 											<div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-1">
 												<div
 													className={`h-full ${barColor}`}
@@ -344,32 +327,36 @@ export default function RestockPage() {
 											</div>
 										</div>
 
-										{/* Footer */}
 										<div className="flex justify-between items-center">
 											<p className="text-xs text-zinc-500">
 												{formatRelativeTime(
 													item.createdAt,
 												)}
 											</p>
-
 											<div className="flex gap-2">
 												<button
 													onClick={() =>
 														handleRestockClick(item)
 													}
-													className="p-2 rounded bg-green-500/10 text-green-400"
+													className="p-2 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 transition"
+													title="Restock"
 												>
 													<ArrowUp className="w-4 h-4" />
 												</button>
-
-												<button
-													onClick={() =>
-														handleRemoveClick(item)
-													}
-													className="p-2 rounded bg-red-500/10 text-red-400"
-												>
-													<Trash2 className="w-4 h-4" />
-												</button>
+												{/* Only admin/manager can remove */}
+												{!isUser && (
+													<button
+														onClick={() =>
+															handleRemoveClick(
+																item,
+															)
+														}
+														className="p-2 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+														title="Remove from queue"
+													>
+														<Trash2 className="w-4 h-4" />
+													</button>
+												)}
 											</div>
 										</div>
 									</div>
@@ -378,7 +365,8 @@ export default function RestockPage() {
 						)}
 					</div>
 
-					<div className="hidden lg:block overflow-x-auto overflow-y-hidden">
+					{/* Desktop Table */}
+					<div className="hidden lg:block overflow-x-auto">
 						<table className="w-full min-w-full text-sm">
 							<thead>
 								<tr className="border-b border-white/10 bg-black/20">
@@ -412,28 +400,16 @@ export default function RestockPage() {
 											key={i}
 											className="border-b border-white/5"
 										>
-											<td className="px-4 py-3">
-												<div className="h-4 w-6 bg-white/10 rounded animate-pulse" />
-											</td>
-											<td className="px-4 py-3">
-												<div className="h-4 w-40 bg-white/10 rounded animate-pulse mb-1.5" />
-												<div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
-											</td>
-											<td className="px-4 py-3">
-												<div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
-											</td>
-											<td className="px-4 py-3">
-												<div className="h-4 w-16 bg-white/10 rounded animate-pulse" />
-											</td>
-											<td className="px-4 py-3">
-												<div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
-											</td>
-											<td className="px-4 py-3">
-												<div className="h-6 w-20 bg-white/10 rounded-full animate-pulse" />
-											</td>
-											<td className="px-4 py-3">
-												<div className="h-8 w-20 bg-white/10 rounded animate-pulse" />
-											</td>
+											{Array.from({ length: 7 }).map(
+												(_, j) => (
+													<td
+														key={j}
+														className="px-4 py-3"
+													>
+														<div className="h-4 w-20 bg-white/10 rounded animate-pulse" />
+													</td>
+												),
+											)}
 										</tr>
 									))
 								) : (
@@ -447,15 +423,15 @@ export default function RestockPage() {
 												);
 											const barColor =
 												getProgressBarColor(percentage);
+											const priorityStyle =
+												getPriorityStyle(percentage);
 
 											return (
 												<motion.tr
 													key={item._id}
 													initial={{ opacity: 0 }}
 													animate={{ opacity: 1 }}
-													exit={{
-														opacity: 0,
-													}}
+													exit={{ opacity: 0 }}
 													className="border-b border-white/5 hover:bg-white/5"
 												>
 													<td className="px-4 py-3 text-white font-medium">
@@ -463,10 +439,10 @@ export default function RestockPage() {
 													</td>
 													<td className="px-4 py-3 text-zinc-400">
 														{item.product.category
-															.name || "—"}
+															?.name || "—"}
 													</td>
 													<td className="px-4 py-3">
-														<div className="space-y-2">
+														<div className="space-y-1.5">
 															<p className="text-red-400 font-bold text-lg">
 																{
 																	item.currentStock
@@ -490,19 +466,9 @@ export default function RestockPage() {
 													</td>
 													<td className="px-4 py-3">
 														<span
-															className={`px-2.5 py-1 rounded-full text-xs font-medium border flex w-fit items-center gap-1 ${
-																PRIORITY_COLORS[
-																	item
-																		.priority
-																]
-															}`}
+															className={`px-2.5 py-1 rounded-full text-xs font-medium border flex w-fit items-center gap-1 ${priorityStyle.badge}`}
 														>
-															{
-																PRIORITY_ICONS[
-																	item
-																		.priority
-																]
-															}{" "}
+															{priorityStyle.icon}{" "}
 															{item.priority}
 														</span>
 													</td>
@@ -513,6 +479,7 @@ export default function RestockPage() {
 													</td>
 													<td className="px-4 py-3">
 														<div className="flex items-center gap-2">
+															{/* Restock — all roles */}
 															<button
 																onClick={() =>
 																	handleRestockClick(
@@ -524,17 +491,21 @@ export default function RestockPage() {
 															>
 																<ArrowUp className="w-4 h-4" />
 															</button>
-															<button
-																onClick={() =>
-																	handleRemoveClick(
-																		item,
-																	)
-																}
-																className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
-																title="Remove from queue"
-															>
-																<Trash2 className="w-4 h-4" />
-															</button>
+
+															{/* Remove — admin/manager only */}
+															{!isUser && (
+																<button
+																	onClick={() =>
+																		handleRemoveClick(
+																			item,
+																		)
+																	}
+																	className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
+																	title="Remove from queue"
+																>
+																	<Trash2 className="w-4 h-4" />
+																</button>
+															)}
 														</div>
 													</td>
 												</motion.tr>
@@ -547,19 +518,16 @@ export default function RestockPage() {
 					</div>
 
 					{/* Pagination */}
-					{!isLoading && (
+					{!isLoading && total > LIMIT && (
 						<div className="px-4 py-4 border-t border-white/10">
 							<div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-								{/* Info */}
 								<div className="text-xs sm:text-sm text-zinc-400 text-center sm:text-left">
 									Showing {(page - 1) * LIMIT + 1}–
 									{Math.min(page * LIMIT, total)} of {total}{" "}
 									items
 								</div>
 
-								{/* Controls */}
-								<div className="flex items-center gap-2 overflow-x-auto scrollbar-hide max-w-full">
-									{/* Prev */}
+								<div className="flex items-center gap-2">
 									<button
 										onClick={() =>
 											setPage(Math.max(1, page - 1))
@@ -570,7 +538,6 @@ export default function RestockPage() {
 										←
 									</button>
 
-									{/* Page Numbers (limited range) */}
 									{Array.from({ length: totalPages })
 										.slice(
 											Math.max(0, page - 3),
@@ -579,7 +546,6 @@ export default function RestockPage() {
 										.map((_, i) => {
 											const pageNum =
 												Math.max(1, page - 2) + i;
-
 											return (
 												<button
 													key={pageNum}
@@ -597,7 +563,6 @@ export default function RestockPage() {
 											);
 										})}
 
-									{/* Next */}
 									<button
 										onClick={() =>
 											setPage(
@@ -627,8 +592,8 @@ export default function RestockPage() {
 				/>
 			)}
 
-			{/* Remove Confirm Dialog */}
-			{selectedItem && (
+			{/* Remove Confirm — admin/manager only */}
+			{selectedItem && !isUser && (
 				<RemoveConfirmDialog
 					open={removeConfirmOpen}
 					onOpenChange={setRemoveConfirmOpen}

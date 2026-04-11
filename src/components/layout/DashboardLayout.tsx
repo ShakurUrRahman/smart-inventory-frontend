@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
+
+// Components
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { Toaster } from "sonner";
+
+// Utils
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -16,41 +20,44 @@ export function DashboardLayout({
 	pageTitle = "Dashboard",
 }: DashboardLayoutProps) {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
+	const [isCollapsed, setIsCollapsed] = useState(false);
 
 	return (
-		<div className="flex h-screen bg-[#0F1117]">
-			{/* Sidebar */}
+		<div className="flex h-screen bg-[#0F1117] overflow-hidden">
+			{/* Sidebar - Fixed/Absolute on the left.
+          Using 'onCollapsed' to match the Sidebar's internal prop expectations.
+      */}
 			<Sidebar
 				isOpen={sidebarOpen}
+				onCollapsed={isCollapsed}
 				onClose={() => setSidebarOpen(false)}
+				setOnCollapsed={setIsCollapsed}
 			/>
 
-			{/* Mobile Sidebar Overlay */}
-			{/* {sidebarOpen && (
-				<div
-					className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-					onClick={() => setSidebarOpen(false)}
-				/>
-			)} */}
-
-			{/* Main Content */}
-			<main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden">
-				{/* Topbar */}
+			{/* Main Content Area 
+          The margin-left (ml) shifts dynamically based on the sidebar's width.
+      */}
+			<main
+				className={cn(
+					"flex-1 flex flex-col h-full min-w-0 transition-all duration-300",
+					isCollapsed ? "lg:ml-[64px]" : "lg:ml-[240px]",
+				)}
+			>
 				<Topbar
 					title={pageTitle}
-					onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+					onMenuClick={() => setSidebarOpen(true)}
 				/>
 
-				{/* Page Content */}
+				{/* Scrollable Content Container */}
 				<div className="flex-1 overflow-y-auto">
-					<div className="p-6 max-w-7xl mx-auto w-full">
+					<div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
 						{children}
 					</div>
 				</div>
 			</main>
 
-			{/* Toast Notifications */}
-			<Toaster position="top-right" theme="dark" />
+			{/* Global Notifications */}
+			<Toaster position="top-right" theme="dark" richColors closeButton />
 		</div>
 	);
 }

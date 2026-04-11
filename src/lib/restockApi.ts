@@ -1,20 +1,29 @@
 import apiClient from "./api";
-import { Product } from "./productsApi";
 
 export interface RestockQueueItem {
 	_id: string;
 	product: {
 		_id: string;
 		name: string;
-		category: string;
+		category: {
+			_id: string;
+			name: string;
+		};
 		stock: number;
 		minStockThreshold: number;
-		status: string;
+		status: "Active" | "Out of Stock";
+		createdBy: {
+			// ✅ Added to track product owner
+			_id: string;
+			name: string;
+			email: string;
+		};
 	};
 	currentStock: number;
 	priority: "High" | "Medium" | "Low";
 	isResolved: boolean;
-	requestedAt: string;
+	createdAt: string;
+	updatedAt: string;
 	resolvedAt?: string;
 }
 
@@ -39,6 +48,8 @@ export interface ResolveRestockPayload {
 
 export const restockApi = {
 	// Get restock queue items
+	// Users see only restock items for products they created
+	// Admins/Managers see all restock items
 	getRestockQueue: async (params?: {
 		priority?: string;
 		page?: number;
@@ -63,6 +74,7 @@ export const restockApi = {
 	},
 
 	// Get restock count (for sidebar badge)
+	// Returns unresolved items count
 	getRestockCount: async (): Promise<number> => {
 		try {
 			const response = await apiClient.get("/restock?limit=1");
@@ -73,10 +85,12 @@ export const restockApi = {
 	},
 
 	// Resolve restock item (add stock)
+	// Only owner of product or admin/manager can resolve
+	// Marks item as resolved and updates product stock
 	resolveRestockItem: async (
 		id: string,
 		payload: ResolveRestockPayload,
-	): Promise<any> => {
+	): Promise<RestockQueueItem> => {
 		try {
 			const response = await apiClient.patch(
 				`/restock/${id}/resolve`,
@@ -96,7 +110,9 @@ export const restockApi = {
 		}
 	},
 
-	// Remove from queue (admin override)
+	// Remove from queue (admin override or owner)
+	// Only owner of product or admin/manager can remove
+	// Removes item without restocking
 	removeFromQueue: async (id: string): Promise<void> => {
 		try {
 			const response = await apiClient.delete(`/restock/${id}`);

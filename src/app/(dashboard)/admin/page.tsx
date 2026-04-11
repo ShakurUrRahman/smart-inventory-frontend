@@ -67,6 +67,13 @@ import {
 	ModalFooter,
 	ModalHeader,
 } from "@/components/shared/DialogModal";
+import { useDebounce } from "@/hooks/useSearch";
+import {
+	Drawer,
+	DrawerBody,
+	DrawerClose,
+	DrawerHeader,
+} from "@/components/shared/SheetDrawer";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const ROLE_STYLES: Record<
@@ -151,7 +158,10 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 		}: {
 			permission: string;
 			value: boolean;
-		}) => updateCategoryPermissions(user._id, { [permission]: value }),
+		}) =>
+			updateCategoryPermissions(user._id || user.id, {
+				[permission]: value,
+			}),
 
 		// 2. Success Handling (Optimistic Cache Update)
 		onSuccess: (updatedPermissions, variables) => {
@@ -429,6 +439,7 @@ function UserManagement({
 	} | null>(null);
 	const [roleHistoryUser, setRoleHistoryUser] = useState<any>(null);
 	const queryClient = useQueryClient();
+	const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
 	const promoteMutation = useMutation({
 		mutationFn: ({ type, userId }: { type: string; userId: string }) => {
@@ -461,12 +472,17 @@ function UserManagement({
 				(roleFilter === "admins" &&
 					(user.role === "admin" || user.role === "super_admin"));
 			const matchesSearch =
-				!searchQuery ||
-				user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				user.email.toLowerCase().includes(searchQuery.toLowerCase());
+				!debouncedSearchQuery ||
+				user.name
+					.toLowerCase()
+					.includes(debouncedSearchQuery.toLowerCase()) ||
+				user.email
+					.toLowerCase()
+					.includes(debouncedSearchQuery.toLowerCase());
+
 			return matchesRole && matchesSearch;
 		});
-	}, [users, roleFilter, searchQuery]);
+	}, [users, roleFilter, debouncedSearchQuery]);
 
 	const FILTERS = [
 		{ id: "all", label: "All" },
@@ -592,10 +608,15 @@ function UserManagement({
 					<Button
 						onClick={() =>
 							confirmAction &&
-							promoteMutation.mutate({
-								type: confirmAction.type,
-								userId: confirmAction.user.id,
-							})
+							promoteMutation.mutate(
+								{
+									type: confirmAction.type,
+									userId:
+										confirmAction.user._id ||
+										confirmAction.user.id,
+								},
+								setConfirmAction(null),
+							)
 						}
 						disabled={promoteMutation.isPending}
 						className="bg-indigo-600 hover:bg-indigo-500"
@@ -606,64 +627,89 @@ function UserManagement({
 			</Modal>
 
 			{/* Role History Sheet */}
-			<Sheet
+			<Drawer
 				open={!!roleHistoryUser}
 				onOpenChange={(open) => !open && setRoleHistoryUser(null)}
+				side="right"
 			>
-				<SheetContent className="bg-[#0a0d12] border-l border-white/10 text-white w-full sm:max-w-md">
-					<SheetHeader>
-						<SheetTitle className="text-white">
-							{roleHistoryUser?.name}&apos;s Role History
-						</SheetTitle>
-						<SheetDescription className="text-zinc-400">
-							All role changes for this user
-						</SheetDescription>
-					</SheetHeader>
-					<div className="mt-6 space-y-4">
-						{roleHistoryUser?.roleHistory?.length === 0 ? (
+				<DrawerClose onClose={() => setRoleHistoryUser(null)} />
+
+				<DrawerHeader>
+					<h2 className="text-xl font-semibold text-white">
+						{roleHistoryUser?.name}&apos;s Role History
+					</h2>
+					<p className="text-sm text-zinc-400 mt-1">
+						Timeline of all role and permission changes
+					</p>
+				</DrawerHeader>
+
+				<DrawerBody className="space-y-6">
+					{roleHistoryUser?.roleHistory?.length === 0 ? (
+						<div className="flex flex-col items-center justify-center py-12 text-center">
+							<div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+								<Clock className="w-6 h-6 text-zinc-500" />
+							</div>
 							<p className="text-zinc-500 text-sm">
-								No role changes recorded.
+								No role changes recorded yet.
 							</p>
-						) : (
-							roleHistoryUser?.roleHistory?.map(
-								(entry: any, idx: number) => (
-									<div
-										key={idx}
-										className="pb-4 border-b border-white/5 last:border-b-0"
-									>
-										<p className="text-xs text-zinc-500">
+						</div>
+					) : (
+						roleHistoryUser?.roleHistory?.map(
+							(entry: any, idx: number) => (
+								<div
+									key={idx}
+									className="relative pl-6 pb-6 border-l border-white/10 last:border-l-0 last:pb-0"
+								>
+									{/* Timeline Dot */}
+									<div className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-[#0a0d12]" />
+
+									<div className="flex flex-col gap-1">
+										<time className="text-xs font-medium text-zinc-500">
 											{new Date(
 												entry.changedAt,
 											).toLocaleDateString("en-US", {
 												month: "short",
 												day: "numeric",
 												year: "numeric",
-											})}{" "}
-											·{" "}
+											})}
+											{" • "}
 											{new Date(
 												entry.changedAt,
 											).toLocaleTimeString("en-US", {
 												hour: "2-digit",
 												minute: "2-digit",
 											})}
+										</time>
+
+										<p className="text-sm font-semibold text-white flex items-center gap-2">
+											<span className="text-zinc-400 line-through decoration-white/20">
+												{entry.fromRole.toUpperCase()}
+											</span>
+											<span className="text-indigo-400">
+												→
+											</span>
+											<span className="text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded text-[10px] tracking-widest">
+												{entry.toRole.toUpperCase()}
+											</span>
 										</p>
-										<p className="text-sm font-medium text-white mt-1">
-											{entry.fromRole.toUpperCase()} →{" "}
-											{entry.toRole.toUpperCase()}
-										</p>
+
 										{entry.changedBy && (
-											<p className="text-xs text-zinc-500 mt-0.5">
-												Changed by:{" "}
-												{entry.changedBy.name}
-											</p>
+											<div className="flex items-center gap-1.5 mt-1">
+												<span className="text-[10px] text-zinc-500 mt-1 uppercase tracking-tighter">
+													Action by:
+												</span>
+												<span className="text-xs text-zinc-300">
+													{entry.changedBy.name}
+												</span>
+											</div>
 										)}
 									</div>
-								),
-							)
-						)}
-					</div>
-				</SheetContent>
-			</Sheet>
+								</div>
+							),
+						)
+					)}
+				</DrawerBody>
+			</Drawer>
 		</div>
 	);
 }

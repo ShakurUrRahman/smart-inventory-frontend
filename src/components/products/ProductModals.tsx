@@ -49,6 +49,7 @@ interface AddEditProductDialogProps {
 	categories: Category[];
 	onSubmit: (data: any) => Promise<void>;
 	isLoading?: boolean;
+	warningBanner?: React.ReactNode; // Added warningBanner prop
 }
 
 interface DeleteProductDialogProps {
@@ -75,6 +76,7 @@ export function AddEditProductDialog({
 	categories,
 	onSubmit,
 	isLoading = false,
+	warningBanner, // Destructure warningBanner
 }: AddEditProductDialogProps) {
 	const isEdit = !!product;
 
@@ -147,6 +149,13 @@ export function AddEditProductDialog({
 			>
 				{/* Body */}
 				<ModalBody className="px-6 py-4 space-y-5">
+					{/* Render Warning Banner here if it exists */}
+					{warningBanner && (
+						<div className="animate-in fade-in slide-in-from-top-2 duration-300">
+							{warningBanner}
+						</div>
+					)}
+
 					{/* Product Name */}
 					<div className="space-y-2">
 						<Label
@@ -159,7 +168,7 @@ export function AddEditProductDialog({
 							id="name"
 							placeholder="e.g., Laptop"
 							className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-600
-							           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10"
+                                focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10"
 							disabled={isLoading}
 							{...register("name")}
 						/>
@@ -169,6 +178,19 @@ export function AddEditProductDialog({
 							</p>
 						)}
 					</div>
+					<Input
+						id="name"
+						placeholder="e.g., Laptop"
+						className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-600
+							           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10"
+						disabled={isLoading}
+						{...register("name")}
+					/>
+					{errors.name && (
+						<p className="text-red-400 text-xs">
+							{errors.name.message}
+						</p>
+					)}
 
 					{/* Category */}
 					<div className="space-y-2">

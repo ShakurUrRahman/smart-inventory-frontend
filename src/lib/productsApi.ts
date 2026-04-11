@@ -1,8 +1,15 @@
 import apiClient from "./api";
 
+export interface User {
+	_id: string;
+	name: string;
+	email: string;
+}
+
 export interface Product {
 	_id: string;
 	name: string;
+	description: string;
 	category: {
 		_id: string;
 		name: string;
@@ -11,6 +18,9 @@ export interface Product {
 	stock: number;
 	minStockThreshold: number;
 	status: "Active" | "Out of Stock";
+	approvalStatus: "approved" | "pending" | "rejected";
+	createdBy: User; // ✅ Added
+	image?: string;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -26,17 +36,22 @@ export interface ProductsResponse {
 
 export interface CreateProductPayload {
 	name: string;
+	description?: string;
 	category: string;
 	price: number;
 	stock: number;
 	minStockThreshold: number;
+	image?: string;
 }
 
 export interface UpdateProductPayload {
 	name?: string;
+	description?: string;
 	category?: string;
 	price?: number;
+	stock?: number;
 	minStockThreshold?: number;
+	image?: string;
 }
 
 export interface RestockPayload {
@@ -45,20 +60,24 @@ export interface RestockPayload {
 
 export const productsApi = {
 	// Get all products with filters and pagination
-	getAllProducts: async (params: {
+	// Users see only their own products, admins see all
+	getAllProducts: async (params?: {
 		search?: string;
 		category?: string;
 		status?: string;
+		approvalStatus?: string; // ✅ Added
 		page?: number;
 		limit?: number;
 	}): Promise<ProductsResponse> => {
 		try {
 			const query = new URLSearchParams();
-			if (params.search) query.append("search", params.search);
-			if (params.category) query.append("category", params.category);
-			if (params.status) query.append("status", params.status);
-			if (params.page) query.append("page", params.page.toString());
-			if (params.limit) query.append("limit", params.limit.toString());
+			if (params?.search) query.append("search", params.search);
+			if (params?.category) query.append("category", params.category);
+			if (params?.status) query.append("status", params.status);
+			if (params?.approvalStatus)
+				query.append("approvalStatus", params.approvalStatus); // ✅ Added
+			if (params?.page) query.append("page", params.page.toString());
+			if (params?.limit) query.append("limit", params.limit.toString());
 
 			const response = await apiClient.get(
 				`/products?${query.toString()}`,
@@ -83,7 +102,7 @@ export const productsApi = {
 		}
 	},
 
-	// Create product
+	// Create product - submits for approval
 	createProduct: async (payload: CreateProductPayload): Promise<Product> => {
 		try {
 			const response = await apiClient.post("/products", payload);
@@ -100,7 +119,8 @@ export const productsApi = {
 		}
 	},
 
-	// Update product
+	// Update product - only owner or admin/manager can update
+	// Editing approved products resets to pending status
 	updateProduct: async (
 		id: string,
 		payload: UpdateProductPayload,
@@ -120,7 +140,7 @@ export const productsApi = {
 		}
 	},
 
-	// Delete product
+	// Delete product - only owner or admin/manager can delete
 	deleteProduct: async (id: string): Promise<void> => {
 		try {
 			const response = await apiClient.delete(`/products/${id}`);
@@ -136,7 +156,8 @@ export const productsApi = {
 		}
 	},
 
-	// Restock product
+	// Restock product - only owner or admin/manager can restock
+	// PUT endpoint changed to PATCH /products/:id/restock
 	restockProduct: async (
 		id: string,
 		payload: RestockPayload,
