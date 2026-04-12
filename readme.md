@@ -2,7 +2,7 @@
 
 A modern, full-stack inventory management application with role-based access control, real-time stock monitoring, and approval workflows.
 
-**Live Demo:** [Coming Soon]  
+**Live Demo:** [[InventoryOS](https://smart-inventory-biz.vercel.app/)]  
 **Backend Repository:** [smart-inventory-backend](link)  
 **Tech Stack:** Next.js 14 | React 18 | TypeScript | TailwindCSS | Shadcn UI | Tanstack Query
 
