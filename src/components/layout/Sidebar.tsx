@@ -137,9 +137,12 @@ export function Sidebar({
 				{/* Header */}
 				<div className="flex items-center justify-between p-4 border-b border-white/10">
 					{!onCollapsed && (
-						<h1 className="text-lg font-bold text-white">
+						<Link
+							href="/dashboard"
+							className="text-lg font-bold text-white cursor-pointer"
+						>
 							InventoryOS
-						</h1>
+						</Link>
 					)}
 					<button
 						onClick={() => setOnCollapsed(!onCollapsed)}
