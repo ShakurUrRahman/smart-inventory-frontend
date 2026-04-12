@@ -19,7 +19,7 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SkeletonGrid } from "@/components/shared/Skeleton";
+import { Skeleton, SkeletonGrid } from "@/components/shared/Skeleton";
 import { categoriesApi } from "@/lib/categoriesApi";
 import { productsApi, Product } from "@/lib/productsApi";
 import { toast } from "sonner";
@@ -605,15 +605,39 @@ export default function ProductsPage() {
 						transition={{ duration: 0.2 }}
 					>
 						{isLoading ? (
-							Array.from({ length: 10 }).map((_, i) => (
-								<tr key={i} className="border-b border-white/5">
-									{Array.from({ length: 20 }).map((_, j) => (
-										<td key={j} className="px-3 py-3">
-											<div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
-										</td>
-									))}
-								</tr>
-							))
+							<div className="p-5 rounded-xl bg-[#1a1e28] border border-white/5 space-y-4">
+								{/* Header (Title + Badge) */}
+								<div className="flex items-center justify-between gap-4">
+									<Skeleton className="h-6 w-1/3 bg-white/5" />{" "}
+									{/* Title Placeholder */}
+									<Skeleton className="h-6 w-20 rounded-full bg-white/5" />{" "}
+									{/* Badge Placeholder */}
+								</div>
+
+								{/* Literature/Category */}
+								<Skeleton className="h-4 w-1/4 bg-zinc-700/60" />
+
+								{/* Stats row (Price & Stock) */}
+								<div className="flex items-center gap-6 pt-1">
+									<Skeleton className="h-5 w-16 bg-white/5" />{" "}
+									{/* Price */}
+									<div className="flex items-center gap-1.5">
+										<Skeleton className="h-5 w-20 bg-amber-500/10" />{" "}
+										{/* Stock (Subtle warning tint) */}
+										<Skeleton className="h-5 w-12 bg-amber-500/10" />{" "}
+										{/* (Low) tag */}
+									</div>
+								</div>
+
+								{/* Buttons (Edit & Delete) */}
+								<div className="flex items-center gap-3 pt-3">
+									{/* We use a colored skeleton to match the eventual button style */}
+									<Skeleton className="h-9 w-20 rounded-lg bg-indigo-500/10" />{" "}
+									{/* Edit Button */}
+									<Skeleton className="h-9 w-24 rounded-lg bg-red-500/10" />{" "}
+									{/* Delete Button */}
+								</div>
+							</div>
 						) : paginatedTabProducts.length === 0 ? (
 							<div className="flex flex-col items-center justify-center py-16 px-4 text-center">
 								<div className="text-5xl mb-4">📦</div>
@@ -983,6 +1007,20 @@ export default function ProductsPage() {
 															<Trash2 className="w-3.5 h-3.5" />
 															Delete
 														</button>
+														{needsRestock && (
+															<button
+																onClick={() =>
+																	handleRestockClick(
+																		product,
+																	)
+																}
+																className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 text-xs transition"
+																title="Restock"
+															>
+																<ArrowUp className="w-3.5 h-3.5" />
+																Restock
+															</button>
+														)}
 													</div>
 												</div>
 											);
