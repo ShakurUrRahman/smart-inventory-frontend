@@ -178,19 +178,6 @@ export function AddEditProductDialog({
 							</p>
 						)}
 					</div>
-					<Input
-						id="name"
-						placeholder="e.g., Laptop"
-						className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-600
-							           focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10"
-						disabled={isLoading}
-						{...register("name")}
-					/>
-					{errors.name && (
-						<p className="text-red-400 text-xs">
-							{errors.name.message}
-						</p>
-					)}
 
 					{/* Category */}
 					<div className="space-y-2">

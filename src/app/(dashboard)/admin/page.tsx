@@ -24,6 +24,7 @@ import {
 	Tag,
 	Users,
 	AlertTriangle,
+	X,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -273,9 +274,15 @@ function UserRow({ user, currentUser, onAction, onViewHistory }: any) {
 						<div className="p-4 space-y-4 bg-black/20">
 							{/* Role Actions */}
 							<div className="space-y-2">
-								<p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">
-									Role Actions
-								</p>
+								{user.role !== "admin" ? (
+									<p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">
+										Role Actions
+									</p>
+								) : (
+									<p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">
+										No Actions To Show
+									</p>
+								)}
 								<div className="flex flex-wrap gap-2">
 									{showPromoteManager && (
 										<button
@@ -523,13 +530,21 @@ function UserManagement({
 				</div>
 
 				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+					<Search className="absolute left-3 top-1/2 -translate-y-3/4 w-4 h-4 text-zinc-400" />
 					<Input
 						placeholder="Search by name or email..."
-						className="pl-10 bg-[#1C1F2A] border-zinc-700/60 text-white"
+						className="pl-10 bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-500"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
+					{searchQuery && (
+						<button
+							onClick={() => setSearchQuery("")}
+							className="absolute right-3 top-1/2 -translate-y-3/4 text-zinc-400 hover:text-white transition-colors"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					)}
 				</div>
 			</div>
 

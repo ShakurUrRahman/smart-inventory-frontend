@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 import { useState, useEffect } from "react";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { dashboardApi } from "@/lib/dashboardApi";
 
@@ -58,6 +58,7 @@ export function Topbar({ title, onMenuClick, isOpen }: TopbarProps) {
 	const router = useRouter();
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [notificationOpen, setNotificationOpen] = useState(false);
+	const queryClient = useQueryClient();
 
 	// Fetch recent activities
 
@@ -84,6 +85,7 @@ export function Topbar({ title, onMenuClick, isOpen }: TopbarProps) {
 			setUserMenuOpen(false);
 			await logoutUser();
 			clearUser();
+			queryClient.clear();
 			toast.success("Logged out successfully!");
 			router.push("/login");
 		} catch (error) {

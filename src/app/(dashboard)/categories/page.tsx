@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DeleteCategoryDialog } from "@/components/categories/DeleteCategoryDialog";
 import { useAuthStore } from "@/store/authStore";
 import usePermissions from "@/hooks/usePermissions";
+import CategoryCardSkeleton from "@/components/shared/CategorySkelton";
 
 export default function CategoriesPage() {
 	const queryClient = useQueryClient();
@@ -148,7 +149,13 @@ export default function CategoriesPage() {
 			)}
 
 			{/* Loading State */}
-			{isLoading && <SkeletonGrid count={6} variant="card" />}
+			{isLoading && (
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{Array.from({ length: 6 }).map((_, i) => (
+						<CategoryCardSkeleton key={i} />
+					))}
+				</div>
+			)}
 
 			{/* Empty State */}
 			{isEmpty && (

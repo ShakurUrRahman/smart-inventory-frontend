@@ -350,21 +350,18 @@ export default function OrdersPage() {
 			<div className="bg-[#13161F] border border-white/10 rounded-xl p-4 mb-6 space-y-3">
 				<div className="flex gap-3 flex-wrap">
 					<div className="relative flex-1 min-w-[200px]">
-						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+						<Search className="absolute left-3 top-1/2 -translate-y-3/4 w-4 h-4 text-zinc-400" />
 						<Input
 							placeholder="Search by customer name..."
 							value={search}
 							onChange={(e) => handleSearchChange(e.target.value)}
 							className="pl-10 bg-[#1C1F2A] border-zinc-700/60 focus:outline-none focus:ring-0
-  data-[highlighted]:bg-white/10
-  data-[highlighted]:text-white
-  data-[highlighted]:outline-none
-  data-[highlighted]:ring-0"
+  data-[highlighted]:bg-white/10 data-[highlighted]:text-white data-[highlighted]:outline-none placeholder:text-zinc-500 data-[highlighted]:ring-0"
 						/>
 						{search && (
 							<button
 								onClick={() => handleSearchChange("")}
-								className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
+								className="absolute right-3 top-1/2 -translate-y-3/4 text-zinc-400 hover:text-white transition-colors"
 							>
 								<X className="w-4 h-4" />
 							</button>

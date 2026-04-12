@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/store/authStore";
 import { loginUser } from "@/lib/authApi";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const loginSchema = z.object({
 	email: z.string().email("Please enter a valid email address"),
@@ -79,6 +80,7 @@ export default function LoginPage() {
 		useAuthStore();
 	const [serverError, setServerError] = useState<string | null>(null);
 	const [loadingRole, setLoadingRole] = useState<string | null>(null);
+	const queryClient = useQueryClient();
 
 	const {
 		register,
@@ -97,6 +99,7 @@ export default function LoginPage() {
 		try {
 			setServerError(null);
 			const res = await loginUser(data.email, data.password);
+			queryClient.clear();
 			setUser(res.user);
 			setToken(res.token);
 			setIsHydrated(true);

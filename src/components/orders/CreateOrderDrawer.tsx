@@ -234,7 +234,7 @@ export default function CreateOrderDrawer({
 						<Input
 							id="customerName"
 							placeholder="e.g., John Smith"
-							className="bg-[#1C1F2A] border-zinc-700/60 text-white"
+							className="bg-[#1C1F2A] border-zinc-700/60 text-white placeholder:text-zinc-500"
 							disabled={isLoading}
 							{...register("customerName")}
 						/>
