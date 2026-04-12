@@ -111,6 +111,11 @@ export default function OrdersPage() {
 		mutationFn: (payload: any) => ordersApi.createOrder(payload),
 		onSuccess: (order) => {
 			queryClient.invalidateQueries({ queryKey: ["orders"] });
+			queryClient.invalidateQueries({ queryKey: ["restock"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-all-counts"] });
+			queryClient.invalidateQueries({ queryKey: ["products"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-count"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-queue"] });
 			setCreateDrawerOpen(false);
 			toast.success(`Order ${order.orderNumber} created!`);
 		},

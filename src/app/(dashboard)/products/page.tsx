@@ -301,6 +301,7 @@ export default function ProductsPage() {
 			productsApi.updateProduct(id, payload),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["products"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-queue"] });
 			toast.success("Product updated successfully!");
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -310,6 +311,7 @@ export default function ProductsPage() {
 		mutationFn: (id: string) => productsApi.deleteProduct(id),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["products"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-queue"] });
 			setDeleteDialogOpen(false);
 			setSelectedProduct(null);
 			toast.success("Product deleted successfully!");
@@ -322,6 +324,7 @@ export default function ProductsPage() {
 			productsApi.restockProduct(id, { quantity }),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["products"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-queue"] });
 			setRestockDialogOpen(false);
 			toast.success("Product restocked successfully!");
 		},

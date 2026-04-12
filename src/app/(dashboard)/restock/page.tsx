@@ -139,6 +139,8 @@ export default function RestockPage() {
 			queryClient.invalidateQueries({ queryKey: ["restock-all-counts"] });
 			queryClient.invalidateQueries({ queryKey: ["products"] });
 			queryClient.invalidateQueries({ queryKey: ["restock-count"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-queue"] });
+			queryClient.invalidateQueries({ queryKey: ["products"] });
 			setRestockModalOpen(false);
 			setSelectedItem(null);
 			const productName = data?.queueItem?.product?.name || "Product";
@@ -153,6 +155,8 @@ export default function RestockPage() {
 			queryClient.invalidateQueries({ queryKey: ["restock"] });
 			queryClient.invalidateQueries({ queryKey: ["restock-all-counts"] });
 			queryClient.invalidateQueries({ queryKey: ["restock-count"] });
+			queryClient.invalidateQueries({ queryKey: ["restock-queue"] });
+			queryClient.invalidateQueries({ queryKey: ["products"] });
 			setRemoveConfirmOpen(false);
 			setSelectedItem(null);
 			toast.success("Item removed from queue");
