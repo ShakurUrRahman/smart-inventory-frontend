@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 // Components
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -22,6 +22,8 @@ export function DashboardLayout({
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [isCollapsed, setIsCollapsed] = useState(false);
 
+	const handleSidebarClose = useCallback(() => setSidebarOpen(false), []);
+
 	return (
 		<div className="flex h-screen bg-[#0F1117] overflow-hidden">
 			{/* Sidebar - Fixed/Absolute on the left.
@@ -30,7 +32,7 @@ export function DashboardLayout({
 			<Sidebar
 				isOpen={sidebarOpen}
 				onCollapsed={isCollapsed}
-				onClose={() => setSidebarOpen(false)}
+				onClose={handleSidebarClose}
 				setOnCollapsed={setIsCollapsed}
 			/>
 
@@ -45,7 +47,11 @@ export function DashboardLayout({
 			>
 				<Topbar
 					title={pageTitle}
-					onMenuClick={() => setSidebarOpen(true)}
+					isOpen={sidebarOpen}
+					onMenuClick={() => {
+						console.log("Menu clicked, current:", sidebarOpen);
+						setSidebarOpen(true);
+					}}
 				/>
 
 				{/* Scrollable Content Container */}

@@ -1050,10 +1050,16 @@ export default function AdminPanel() {
 	});
 
 	const isSuperAdmin = currentUser?.isSuperAdmin;
-	const isAdmin = currentUser?.role === "admin" || currentUser?.isSuperAdmin;
+	const isAdmin = currentUser?.role === "admin";
+	const isManager = currentUser?.role === "manager";
+
+	const isAdminManager =
+		currentUser?.role === "admin" ||
+		currentUser?.isSuperAdmin ||
+		currentUser?.role === "manager";
 	const pendingCount = productsData?.total || 0;
 
-	if (!isAdmin) {
+	if (!isAdminManager) {
 		return (
 			<div className="flex flex-col items-center justify-center py-24 text-center">
 				<AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
@@ -1064,6 +1070,23 @@ export default function AdminPanel() {
 					You don&apos;t have permission to access this page.
 				</p>
 			</div>
+		);
+	}
+
+	if (isManager) {
+		return (
+			<>
+				<PageHeader
+					title="Pending Products"
+					subtitle={`${pendingCount} pending approvals`}
+				/>
+
+				<PendingApprovals
+					isLoadingProducts={isLoadingProducts}
+					products={productsData?.data || []}
+					totalPending={pendingCount}
+				/>
+			</>
 		);
 	}
 
@@ -1132,7 +1155,7 @@ export default function AdminPanel() {
 					exit={{ opacity: 0, y: -8 }}
 					transition={{ duration: 0.2 }}
 				>
-					{activeTab === "users" && (
+					{activeTab === "users" &&  (
 						<UserManagement
 							currentUser={currentUser}
 							isLoadingUsers={isLoadingUsers}

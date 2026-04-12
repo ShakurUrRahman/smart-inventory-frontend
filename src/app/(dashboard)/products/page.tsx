@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -173,6 +173,9 @@ export default function ProductsPage() {
 		"all" | "approved" | "pending" | "rejected"
 	>("all");
 
+	const [userPage, setUserPage] = useState(1);
+	const USER_LIMIT = 6;
+
 	const debouncedSearch = useDebounce(search, 300);
 
 	// Dialog states
@@ -202,6 +205,7 @@ export default function ProductsPage() {
 	const handleSearchChange = (value: string) => {
 		setSearch(value);
 		setPage(1);
+		setUserPage(1);
 		updateUrl(value, categoryFilter, statusFilter, 1);
 	};
 	const handleCategoryChange = (value: string) => {
@@ -260,6 +264,22 @@ export default function ProductsPage() {
 		}),
 		[products],
 	);
+
+	useEffect(() => {
+		setUserPage(1);
+	}, [userTab]);
+
+	const currentTabProducts = useMemo(() => {
+		if (userTab === "all") return products;
+		return userProducts[userTab as keyof typeof userProducts] || [];
+	}, [userTab, products, userProducts]);
+
+	const paginatedTabProducts = useMemo(() => {
+		const start = (userPage - 1) * USER_LIMIT;
+		return currentTabProducts.slice(start, start + USER_LIMIT);
+	}, [currentTabProducts, userPage]);
+
+	const userTotalPages = Math.ceil(currentTabProducts.length / USER_LIMIT);
 
 	// ── Mutations ─────────────────────────────────────────────────────────────
 	const createMutation = useMutation({
@@ -322,12 +342,15 @@ export default function ProductsPage() {
 	};
 	const handleDeleteProduct = async () => {
 		if (selectedProduct) {
+			setDeleteDialogOpen(false);
 			await deleteMutation.mutateAsync(selectedProduct._id);
 		}
 	};
 	const handleRestockProduct = (quantity: number) => {
-		if (selectedProduct)
+		if (selectedProduct) {
+			setRestockDialogOpen(false);
 			restockMutation.mutateAsync({ id: selectedProduct._id, quantity });
+		}
 	};
 
 	const handleEditClick = (product: Product) => {
@@ -469,11 +492,6 @@ export default function ProductsPage() {
 	// USER VIEW
 	// ══════════════════════════════════════════════════════════════════════════
 	if (isUser) {
-		const tabProducts =
-			userTab === "all"
-				? products
-				: userProducts[userTab as keyof typeof userProducts];
-
 		return (
 			<motion.div
 				initial={{ opacity: 0, y: 12 }}
@@ -593,7 +611,7 @@ export default function ProductsPage() {
 									))}
 								</tr>
 							))
-						) : tabProducts.length === 0 ? (
+						) : paginatedTabProducts.length === 0 ? (
 							<div className="flex flex-col items-center justify-center py-16 px-4 text-center">
 								<div className="text-5xl mb-4">📦</div>
 								<h3 className="text-lg font-semibold text-white mb-2">
@@ -663,7 +681,7 @@ export default function ProductsPage() {
 											</tr>
 										</thead>
 										<tbody>
-											{tabProducts.map(
+											{paginatedTabProducts.map(
 												(product: any, idx: number) => {
 													const isLowStock =
 														product.stock > 0 &&
@@ -793,6 +811,19 @@ export default function ProductsPage() {
 																		>
 																			<Trash2 className="w-4 h-4" />
 																		</button>
+																		{needsRestock && (
+																			<button
+																				onClick={() =>
+																					handleRestockClick(
+																						product,
+																					)
+																				}
+																				className="p-1.5 rounded hover:bg-amber-500/20 text-amber-400 transition"
+																				title="Restock"
+																			>
+																				<ArrowUp className="w-4 h-4" />
+																			</button>
+																		)}
 																	</div>
 																</td>
 															</tr>
@@ -833,124 +864,200 @@ export default function ProductsPage() {
 
 								{/* Mobile Cards */}
 								<div className="block lg:hidden space-y-3 p-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-									{tabProducts.map((product: any) => {
-										const isLowStock =
-											product.stock > 0 &&
-											product.stock <=
-												product.minStockThreshold;
-										const isOutOfStock =
-											product.stock === 0;
-										const needsRestock =
-											isLowStock || isOutOfStock;
+									{paginatedTabProducts.map(
+										(product: any) => {
+											const isLowStock =
+												product.stock > 0 &&
+												product.stock <=
+													product.minStockThreshold;
+											const isOutOfStock =
+												product.stock === 0;
+											const needsRestock =
+												isLowStock || isOutOfStock;
 
-										const badge = APPROVAL_BADGE[
-											product.approvalStatus
-										] ?? {
-											label: product.approvalStatus,
-											className:
-												"bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
-										};
-										const borderClass =
-											product.approvalStatus === "pending"
-												? "border-amber-500/30 border-dashed"
-												: product.approvalStatus ===
-													  "rejected"
-													? "border-red-500/30 border-dashed"
-													: "border-white/10";
+											const badge = APPROVAL_BADGE[
+												product.approvalStatus
+											] ?? {
+												label: product.approvalStatus,
+												className:
+													"bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+											};
+											const borderClass =
+												product.approvalStatus ===
+												"pending"
+													? "border-amber-500/30 border-dashed"
+													: product.approvalStatus ===
+														  "rejected"
+														? "border-red-500/30 border-dashed"
+														: "border-white/10";
 
-										return (
-											<div
-												key={product._id}
-												className={`bg-[#1b1e28] border ${borderClass} p-4 rounded-xl space-y-2.5`}
-											>
-												<div className="flex justify-between items-start gap-2">
-													<p className="text-white font-semibold text-sm truncate">
-														{product.name}
+											return (
+												<div
+													key={product._id}
+													className={`bg-[#1b1e28] border ${borderClass} p-4 rounded-xl space-y-2.5`}
+												>
+													<div className="flex justify-between items-start gap-2">
+														<p className="text-white font-semibold text-sm truncate">
+															{product.name}
+														</p>
+														<span
+															className={`px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${badge.className}`}
+														>
+															{badge.label}
+														</span>
+													</div>
+													<p className="text-zinc-400 text-xs">
+														{typeof product.category ===
+														"string"
+															? product.category
+															: product.category
+																	?.name}
 													</p>
-													<span
-														className={`px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${badge.className}`}
-													>
-														{badge.label}
-													</span>
-												</div>
-												<p className="text-zinc-400 text-xs">
-													{typeof product.category ===
-													"string"
-														? product.category
-														: product.category
-																?.name}
-												</p>
-												<div className="flex items-center gap-4">
-													<p className="text-white text-sm">
-														$
-														{product.price.toFixed(
-															2,
+													<div className="flex items-center gap-4">
+														<p className="text-white text-sm">
+															$
+															{product.price.toFixed(
+																2,
+															)}
+														</p>
+														<p
+															className={`text-sm font-medium ${isOutOfStock ? "text-red-400" : needsRestock ? "text-amber-400" : "text-green-400"}`}
+														>
+															Stock:{" "}
+															{product.stock}
+															{isOutOfStock &&
+																" (Out)"}
+															{needsRestock &&
+																!isOutOfStock &&
+																" (Low)"}
+														</p>
+													</div>
+
+													{product.approvalStatus ===
+														"rejected" &&
+														product.rejectionReason && (
+															<div className="flex items-start gap-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+																<AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+																<p className="text-red-400 text-xs">
+																	{
+																		product.rejectionReason
+																	}
+																</p>
+															</div>
 														)}
-													</p>
-													<p
-														className={`text-sm font-medium ${isOutOfStock ? "text-red-400" : needsRestock ? "text-amber-400" : "text-green-400"}`}
-													>
-														Stock: {product.stock}
-														{isOutOfStock &&
-															" (Out)"}
-														{needsRestock &&
-															!isOutOfStock &&
-															" (Low)"}
-													</p>
-												</div>
 
-												{product.approvalStatus ===
-													"rejected" &&
-													product.rejectionReason && (
-														<div className="flex items-start gap-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
-															<AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
-															<p className="text-red-400 text-xs">
-																{
-																	product.rejectionReason
-																}
-															</p>
-														</div>
+													{product.approvalStatus ===
+														"pending" && (
+														<p className="text-zinc-500 text-xs italic">
+															Awaiting review by
+															admin or manager
+														</p>
 													)}
 
-												{product.approvalStatus ===
-													"pending" && (
-													<p className="text-zinc-500 text-xs italic">
-														Awaiting review by admin
-														or manager
-													</p>
-												)}
-
-												<div className="flex gap-2 pt-1">
-													<button
-														onClick={() =>
-															handleEditClick(
-																product,
-															)
-														}
-														className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-xs transition"
-													>
-														<Pencil className="w-3.5 h-3.5" />
-														{product.approvalStatus ===
-														"rejected"
-															? "Resubmit"
-															: "Edit"}
-													</button>
-													<button
-														onClick={() =>
-															handleDeleteClick(
-																product,
-															)
-														}
-														className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 text-xs transition"
-													>
-														<Trash2 className="w-3.5 h-3.5" />
-														Delete
-													</button>
+													<div className="flex gap-2 pt-1">
+														<button
+															onClick={() =>
+																handleEditClick(
+																	product,
+																)
+															}
+															className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-xs transition"
+														>
+															<Pencil className="w-3.5 h-3.5" />
+															{product.approvalStatus ===
+															"rejected"
+																? "Resubmit"
+																: "Edit"}
+														</button>
+														<button
+															onClick={() =>
+																handleDeleteClick(
+																	product,
+																)
+															}
+															className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 text-xs transition"
+														>
+															<Trash2 className="w-3.5 h-3.5" />
+															Delete
+														</button>
+													</div>
 												</div>
-											</div>
-										);
-									})}
+											);
+										},
+									)}
 								</div>
+								{!isLoading &&
+									currentTabProducts.length > USER_LIMIT && (
+										<div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 border-t border-white/10 gap-4">
+											<div className="text-xs sm:text-sm text-zinc-400 order-2 sm:order-1">
+												Showing{" "}
+												{(userPage - 1) * USER_LIMIT +
+													1}
+												–
+												{Math.min(
+													userPage * USER_LIMIT,
+													currentTabProducts.length,
+												)}{" "}
+												of {currentTabProducts.length}
+											</div>
+											<div className="flex items-center gap-1 order-1 sm:order-2">
+												<button
+													onClick={() =>
+														setUserPage(
+															Math.max(
+																1,
+																userPage - 1,
+															),
+														)
+													}
+													disabled={userPage === 1}
+													className="p-2 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+												>
+													<ChevronLeft className="w-4 h-4 text-zinc-400" />
+												</button>
+												{Array.from({
+													length: userTotalPages,
+												}).map((_, i) => {
+													const pageNum = i + 1;
+													return (
+														<button
+															key={pageNum}
+															onClick={() =>
+																setUserPage(
+																	pageNum,
+																)
+															}
+															className={`min-w-[32px] h-8 flex items-center justify-center rounded text-xs sm:text-sm transition-all ${
+																userPage ===
+																pageNum
+																	? "bg-indigo-600 text-white font-medium"
+																	: "hover:bg-white/10 text-zinc-400"
+															}`}
+														>
+															{pageNum}
+														</button>
+													);
+												})}
+												<button
+													onClick={() =>
+														setUserPage(
+															Math.min(
+																userTotalPages,
+																userPage + 1,
+															),
+														)
+													}
+													disabled={
+														userPage ===
+														userTotalPages
+													}
+													className="p-2 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+												>
+													<ChevronRight className="w-4 h-4 text-zinc-400" />
+												</button>
+											</div>
+										</div>
+									)}
 							</div>
 						)}
 					</motion.div>

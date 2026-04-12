@@ -17,7 +17,7 @@ const usePermissions = () => {
 		isAtLeastAdmin: ["admin", "super_admin"].includes(role),
 
 		// ── Route access ───────────────────────────────────────────────────────
-		canAccessAdminPanel: ["admin", "super_admin"].includes(role),
+		canAccessAdminPanel: ["manager", "admin", "super_admin"].includes(role),
 		canAccessOrders: ["manager", "admin", "super_admin"].includes(role),
 		canAccessActivity: ["manager", "admin", "super_admin"].includes(role),
 
