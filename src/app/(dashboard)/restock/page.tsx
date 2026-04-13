@@ -37,6 +37,12 @@ const getProgressBarColor = (percentage: number) => {
 	return "bg-green-500";
 };
 
+const getStockTextColor = (percentage: number) => {
+	if (percentage <= 30) return "text-red-500";
+	if (percentage <= 65) return "text-amber-500";
+	return "text-green-500";
+};
+
 const getPriorityStyle = (percentage: number) => {
 	if (percentage <= 30)
 		return {
@@ -296,6 +302,8 @@ export default function RestockPage() {
 								const priorityStyle =
 									getPriorityStyle(percentage);
 
+								const textColor = getStockTextColor(percentage);
+
 								return (
 									<div
 										key={item._id}
@@ -318,7 +326,9 @@ export default function RestockPage() {
 										</p>
 
 										<div>
-											<p className="text-red-400 font-bold text-lg">
+											<p
+												className={`font-bold text-lg ${textColor}`}
+											>
 												{item.currentStock}
 											</p>
 											<div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-1">
@@ -342,25 +352,23 @@ export default function RestockPage() {
 													onClick={() =>
 														handleRestockClick(item)
 													}
-													className="p-2 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 transition"
+													className="p-2 rounded bg-green-500/10 hover:bg-green-500/20 transition"
 													title="Restock"
 												>
-													<ArrowUp className="w-4 h-4" />
+													<ArrowUp
+														className={`w-4 h-4 ${textColor}`}
+													/>
 												</button>
-												{/* Only admin/manager can remove */}
-												{!isUser && (
-													<button
-														onClick={() =>
-															handleRemoveClick(
-																item,
-															)
-														}
-														className="p-2 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
-														title="Remove from queue"
-													>
-														<Trash2 className="w-4 h-4" />
-													</button>
-												)}
+
+												<button
+													onClick={() =>
+														handleRemoveClick(item)
+													}
+													className="p-2 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+													title="Remove from queue"
+												>
+													<Trash2 className="w-4 h-4" />
+												</button>
 											</div>
 										</div>
 									</div>
@@ -427,6 +435,9 @@ export default function RestockPage() {
 												);
 											const barColor =
 												getProgressBarColor(percentage);
+											const textColor =
+												getStockTextColor(percentage);
+
 											const priorityStyle =
 												getPriorityStyle(percentage);
 
@@ -447,7 +458,9 @@ export default function RestockPage() {
 													</td>
 													<td className="px-4 py-3">
 														<div className="space-y-1.5">
-															<p className="text-red-400 font-bold text-lg">
+															<p
+																className={`font-bold text-lg ${textColor}`}
+															>
 																{
 																	item.currentStock
 																}
@@ -490,26 +503,25 @@ export default function RestockPage() {
 																		item,
 																	)
 																}
-																className="p-1.5 rounded hover:bg-green-500/20 text-green-400 transition"
+																className={`p-1.5 rounded hover:${barColor}/20 transition`}
 																title="Restock"
 															>
-																<ArrowUp className="w-4 h-4" />
+																<ArrowUp
+																	className={`w-4 h-4 ${textColor}`}
+																/>
 															</button>
 
-															{/* Remove — admin/manager only */}
-															{!isUser && (
-																<button
-																	onClick={() =>
-																		handleRemoveClick(
-																			item,
-																		)
-																	}
-																	className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
-																	title="Remove from queue"
-																>
-																	<Trash2 className="w-4 h-4" />
-																</button>
-															)}
+															<button
+																onClick={() =>
+																	handleRemoveClick(
+																		item,
+																	)
+																}
+																className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition"
+																title="Remove from queue"
+															>
+																<Trash2 className="w-4 h-4" />
+															</button>
 														</div>
 													</td>
 												</motion.tr>

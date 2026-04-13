@@ -87,7 +87,7 @@ export function AddCategoryDialog({
 						<Input
 							id="name"
 							placeholder="e.g., Electronics, Clothing"
-							className="bg-[#1C1F2A] border-zinc-700/60 h-10"
+							className="bg-[#1C1F2A] border-zinc-700/60 h-10 placeholder:text-zinc-500"
 							disabled={isLoading}
 							{...register("name")}
 						/>
