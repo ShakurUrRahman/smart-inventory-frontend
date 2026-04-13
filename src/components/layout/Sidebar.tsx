@@ -235,7 +235,9 @@ export function Sidebar({
 									{onCollapsed && (
 										<div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
 											<div className="bg-zinc-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap border border-white/10">
-												Admin Panel
+												{user?.role === "manager"
+													? "Manager Panel"
+													: "Admin Panel"}
 											</div>
 										</div>
 									)}
@@ -349,6 +351,35 @@ export function Sidebar({
 								</span>
 							</Link>
 						))}
+						{canAccessAdminPanel && (
+							<>
+								<div className="my-2 mx-1 border-t border-white/10" />
+								<div className="relative group">
+									<Link href="/admin">
+										<span
+											className={cn(
+												"flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+												onCollapsed
+													? "justify-center px-2"
+													: "justify-start px-3",
+												"text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10",
+												isActive("/admin") &&
+													"text-amber-400 bg-amber-500/10 border-l-2 border-amber-500 pl-[10px]",
+											)}
+										>
+											<ShieldCheck className="w-5 h-5 flex-shrink-0" />
+											{!onCollapsed && (
+												<span className="text-sm font-medium">
+													{user?.role === "manager"
+														? "Manager Panel"
+														: "Admin Panel"}
+												</span>
+											)}
+										</span>
+									</Link>
+								</div>
+							</>
+						)}
 					</nav>
 
 					<div className="px-4 py-4 border-t border-white/10 space-y-2">

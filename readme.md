@@ -1,806 +1,265 @@
-# 🏭 Smart Inventory & Order Management System - Frontend
+# InventoryOS — Frontend
 
-A modern, full-stack inventory management application with role-based access control, real-time stock monitoring, and approval workflows.
+<div align="center">
 
-**Live Demo:** [[InventoryOS](https://smart-inventory-biz.vercel.app/)]  
-**Backend Repository:** [smart-inventory-backend](link)  
-**Tech Stack:** Next.js 14 | React 18 | TypeScript | TailwindCSS | Shadcn UI | Tanstack Query
+![InventoryOS](https://img.shields.io/badge/InventoryOS-Frontend-6366F1?style=for-the-badge)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-06B6D4?style=for-the-badge&logo=tailwindcss)
 
----
+**A polished, full-featured inventory management dashboard built with Next.js 15, TypeScript, and a dark-first design system.**
 
-## 📋 Table of Contents
+[Live Demo](https://smart-inventory-biz.vercel.app) · [Backend Repo](https://github.com/ShakurUrRahman/smart-inventory)
 
-1. [Overview](#overview)
-2. [Features](#features)
-3. [Architecture](#architecture)
-4. [Installation](#installation)
-5. [Configuration](#configuration)
-6. [Project Structure](#project-structure)
-7. [API Integration](#api-integration)
-8. [Authentication & Authorization](#authentication--authorization)
-9. [Key Pages & Components](#key-pages--components)
-10. [Data Flow](#data-flow)
-11. [Development Guide](#development-guide)
-12. [Deployment](#deployment)
-13. [Troubleshooting](#troubleshooting)
+</div>
 
 ---
 
-## 🎯 Overview
+## Overview
 
-**Smart Inventory** is an enterprise-grade inventory management system designed for multi-user environments with role-based access control. It enables users to submit products for approval, track stock levels, manage restocking requests, and provides admins with powerful tools for product approval and inventory oversight.
-
-### Key Highlights:
-- 🔐 **Role-Based Access Control (RBAC)** - 4 roles: User, Manager, Admin, Super Admin
-- ✅ **Product Approval Workflow** - Products require admin/manager approval before use
-- 📊 **Real-Time Stock Monitoring** - Low stock alerts and restock queue management
-- 👥 **User-Centric Design** - Users manage only their products; admins manage all
-- 🎨 **Modern UI/UX** - Dark theme with indigo accents, smooth animations
-- 📱 **Responsive Design** - Works seamlessly on mobile, tablet, and desktop
+InventoryOS Frontend is a production-ready SPA that provides a complete inventory management experience. It features a full RBAC system, real-time notifications, animated UI, and a responsive design that works across all device sizes.
 
 ---
 
-## ✨ Features
+## Tech Stack
 
-### 👤 User (Regular User) Features
-
-**Products Management:**
-- ✅ Submit products for approval (awaiting admin/manager review)
-- ✅ View products by approval status (Approved, Pending, Rejected)
-- ✅ Edit products (resubmits for approval if previously approved)
-- ✅ Delete products
-- ✅ Restock own products when stock is low
-- ❌ Cannot manage other users' products
-
-**Stock Management:**
-- ✅ View restock queue for own products only
-- ✅ Resolve restock items by adding stock
-- ✅ Receive low stock alerts
-- ✅ Filter restock by priority (High, Medium, Low)
-
-**Dashboard:**
-- ✅ Quick overview of own products by status
-- ✅ Recent activity logs
-- ✅ Stock level indicators
+| Category         | Technology               |
+| ---------------- | ------------------------ |
+| Framework        | Next.js 15 (App Router)  |
+| Language         | TypeScript 5.9           |
+| Styling          | Tailwind CSS + shadcn/ui |
+| State Management | Zustand (with persist)   |
+| Server State     | TanStack Query v5        |
+| Forms            | React Hook Form + Zod    |
+| Animations       | Framer Motion            |
+| HTTP Client      | Axios                    |
+| Auth             | JWT + js-cookie          |
+| Icons            | Lucide React             |
+| Notifications    | Sonner                   |
+| Date Utils       | date-fns                 |
 
 ---
 
-### 👔 Manager Features
+## Features
 
-**Product Management:**
-- ✅ View ALL products (not just own)
-- ✅ Edit any product
-- ✅ Delete any product
-- ✅ Restock any product
-- ✅ Approve/Reject pending products
-- ✅ Filter by status, category, approval status
+### Authentication
 
-**Restock Management:**
-- ✅ View ALL restock queue items
-- ✅ Resolve restock for any product
-- ✅ Remove items from queue
-- ✅ Priority-based filtering
+- JWT-based authentication with cookie persistence
+- Auto-rehydration on app load via `/api/auth/me`
+- Protected routes via Next.js middleware with JWT verification
+- Role-aware redirects — authenticated users can't access login/register
 
-**Category Permissions:**
-- ✅ Grant/Revoke category permissions to other managers
-- ✅ Toggle Create, Update, Delete permissions globally
+### Role-Based Access Control (RBAC)
 
-**Admin Panel:**
-- ✅ Manage users (view, create, update roles)
-- ✅ View activity logs
-- ✅ Dashboard analytics
+Four roles with distinct permissions:
 
----
+| Role          | Access                                                              |
+| ------------- | ------------------------------------------------------------------- |
+| `super_admin` | Full access — can demote admins, only one exists                    |
+| `admin`       | Full access — can manage users, approve products/categories         |
+| `manager`     | Operational access — orders, restock, categories (with permissions) |
+| `user`        | Limited access — own products, categories (view only)               |
 
-### 🔑 Admin & Super Admin Features
+The `usePermissions()` hook centralizes all permission checks — never hardcode role checks in components.
 
-**All Manager Features +**
-- ✅ Full system administration
-- ✅ User role management
-- ✅ System-wide analytics
-- ✅ All activity logs
-- ✅ Unlimited access to all operations
+### Dashboard
 
----
+- Live stats — today's orders, revenue, stock alerts, order pipeline
+- 7-day orders chart and revenue chart (Recharts)
+- Order status breakdown (pie/donut chart)
+- Low stock product summary table
+- Real-time activity feed
 
-## 🏗️ Architecture
+### Products
 
-### Frontend Stack
-```
-Next.js 14 (App Router)
-├── React 18
-├── TypeScript
-├── TailwindCSS v4
-├── Shadcn UI Components
-├── Tanstack Query (Data Fetching)
-├── Zustand (State Management)
-├── Framer Motion (Animations)
-└── Sonner (Toast Notifications)
-```
+- Role-split view — users see their own products with approval status tabs
+- Admin/manager see all approved products with full CRUD
+- Approval workflow — user products start as `pending`, require admin/manager approval
+- Inline rejection reason display
+- Low stock + out-of-stock visual indicators with restock button
+- Paginated table with debounced search, category filter, status filter
 
-### Authentication Flow
-```
-Login → JWT Token → Cookie Storage → Protected Routes
-   ↓
-   Middleware (Token Validation)
-   ↓
-   Auth Store (User State)
-   ↓
-   Route Protection (usePermissions Hook)
-```
+### Categories
 
-### Data Flow
-```
-User Action → API Call → Tanstack Query → Cache → UI Update
-                ↓
-           Error Handling
-                ↓
-           Toast Notification
-```
+- Grid view with product count per category
+- Create, rename, delete with confirmation dialogs
+- Manager category permission toggles (create/update/delete independently)
 
----
+### Orders
 
-## 🚀 Installation
+- Full order lifecycle — Pending → Confirmed → Shipped → Delivered / Cancelled
+- Status validation — prevents illegal transitions
+- Expandable row detail with item breakdown
+- Status change with confirmation dialog and animated dropdown
+- Search by customer name, date filter, status tabs with counts
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Backend API running on `http://localhost:5000`
+### Restock Queue
 
-### Steps
+- Role-aware — users see only their products' alerts, admin/manager see all
+- Priority tabs (High / Medium / Low) with animated sliding indicator
+- Progress bar color synced with priority badge (percentage-based)
+- Restock modal with current stock, new stock preview, queue resolution status
 
-1. **Clone Repository**
-```bash
-git clone <repository-url>
-cd smart-inventory/packages/frontend
-```
+### Admin Panel
 
-2. **Install Dependencies**
-```bash
-npm install
-```
+- User management table — all users sorted by role weight
+- Promote user → manager (admin + super_admin)
+- Promote manager → admin (super_admin only)
+- Demote admin → manager (super_admin only)
+- Demote manager → user (admin + super_admin)
+- Category permission toggles per manager (Switch UI)
+- Pending product approval with approve/reject actions
+- Role history tracking
 
-3. **Setup Environment Variables**
-Create `.env.local`:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
-NEXT_PUBLIC_APP_NAME=Smart Inventory
-```
+### Activity Log
 
-4. **Run Development Server**
-```bash
-npm run dev
-```
+- Timeline view with animated stagger entry
+- Entity-type filter tabs (Order, Product, Stock, User, Category)
+- Relative timestamps, performer name, action descriptions
+- Pagination
 
-Open [http://localhost:3000](http://localhost:3000)
+### Notifications
+
+- Bell icon with unread count badge
+- Populated from recent activity feed (polls every 30s)
+- Mark individual / mark all as read
+- Remove individual notifications
+- Zustand-backed notification store
 
 ---
 
-## ⚙️ Configuration
-
-### Environment Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_API_URL` | Backend API base URL | `http://localhost:5000/api` |
-| `NEXT_PUBLIC_APP_NAME` | Application name | `Smart Inventory` |
-| `NODE_ENV` | Environment | `development` or `production` |
-
-### API Client Configuration
-
-**File:** `src/lib/api.ts`
-
-```typescript
-const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-});
-
-// Auto-attach JWT from cookies
-apiClient.interceptors.request.use((config) => {
-  const token = getTokenFromCookie();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-```
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
-├── app/                          # Next.js App Router
-│   ├── (auth)/                  # Authentication pages
-│   │   ├── login/page.tsx       # Login form with demo account cards
-│   │   └── register/page.tsx    # Registration (if enabled)
-│   ├── (dashboard)/             # Protected dashboard routes
-│   │   ├── page.tsx             # Dashboard home
-│   │   ├── products/page.tsx    # Products list (users see own, admins see all)
-│   │   ├── restock/page.tsx     # Restock queue management
-│   │   ├── categories/page.tsx  # Category management
-│   │   ├── admin/page.tsx       # Admin panel (users, permissions)
-│   │   └── activity/page.tsx    # Activity logs
-│   ├── layout.tsx               # Root layout
-│   └── middleware.ts            # Token validation middleware
-│
+├── app/
+│   ├── (auth)/
+│   │   ├── login/          # Login page
+│   │   └── register/       # Register page
+│   └── (dashboard)/
+│       ├── dashboard/       # Stats, charts
+│       ├── products/        # Products CRUD
+│       ├── categories/      # Categories management
+│       ├── orders/          # Orders management
+│       ├── restock/         # Restock queue
+│       ├── activity/        # Activity log
+│       └── admin/           # Admin panel
 ├── components/
-│   ├── layout/
-│   │   ├── Sidebar.tsx          # Navigation sidebar
-│   │   ├── PageHeader.tsx       # Page title & actions
-│   │   └── TopNav.tsx           # Top navigation
-│   ├── ui/                      # Shadcn UI components
-│   ├── products/
-│   │   ├── ProductModals.tsx    # Add/Edit/Delete dialogs
-│   │   └── ProductCard.tsx      # Product card component
-│   ├── shared/
-│   │   ├── Skeleton.tsx         # Loading skeleton
-│   │   ├── Modal.tsx            # Modal wrapper
-│   │   └── Dialog.tsx           # Dialog wrapper
-│   └── auth/
-│       ├── LoginForm.tsx        # Login form
-│       └── DemoAccountCards.tsx # Demo account selector
-│
-├── lib/
-│   ├── api.ts                   # Axios instance
-│   ├── productsApi.ts           # Products API methods
-│   ├── restockApi.ts            # Restock API methods
-│   ├── categoriesApi.ts         # Categories API methods
-│   ├── adminApi.ts              # Admin API methods
-│   ├── authApi.ts               # Authentication API
-│   └── utils.ts                 # Utility functions
-│
+│   ├── layout/              # Sidebar, Topbar, DashboardLayout, PageHeader
+│   ├── shared/              # Skeleton, Modal, DialogModal
+│   ├── ui/                  # shadcn components + BaseModal
+│   ├── products/            # ProductModals
+│   ├── categories/          # AddCategoryDialog, UpdateCategoryDialog, DeleteCategoryDialog
+│   ├── orders/              # CreateOrderDrawer, StatusDropdown
+│   └── restock/             # RestockModals
 ├── hooks/
-│   ├── useAuth.ts               # Auth hook
-│   ├── usePermissions.ts        # Role-based access hook
-│   ├── useDebounce.ts           # Debounce hook
-│   ├── useSearch.ts             # Search hook
-│   └── useIsMobile.ts           # Mobile detection hook
-│
+│   ├── usePermissions.ts    # Centralized RBAC permission checks
+│   └── useSearch.ts         # useDebounce hook
+├── lib/
+│   ├── api.ts               # Axios instance with auth interceptor
+│   ├── authApi.ts           # Auth API calls
+│   ├── productsApi.ts
+│   ├── categoriesApi.ts
+│   ├── ordersApi.ts
+│   ├── restockApi.ts
+│   ├── dashboardApi.ts
+│   └── adminApi.ts
 ├── store/
-│   ├── authStore.ts             # Zustand auth store
-│   └── uiStore.ts               # Zustand UI state store
-│
-├── types/
-│   ├── auth.ts                  # Auth types
-│   ├── products.ts              # Product types
-│   ├── user.ts                  # User types
-│   └── index.ts                 # Type exports
-│
-├── utils/
-│   ├── stockUtils.ts            # Stock calculation helpers
-│   ├── dateUtils.ts             # Date formatting
-│   └── formatters.ts            # Data formatting utilities
-│
-├── styles/
-│   └── globals.css              # Global styles + Tailwind
-│
-└── constants/
-    ├── colors.ts                # Color constants
-    ├── routes.ts                # Route definitions
-    └── messages.ts              # User-facing messages
+│   ├── authStore.ts         # Zustand auth store with persist
+│   └── notificationStore.ts # Zustand notification store
+├── middleware.ts             # JWT verification + RBAC route protection
+└── types/
+    └── express.d.ts         # Express type augmentation
 ```
 
 ---
 
-## 🔌 API Integration
+## Getting Started
 
-### API Client Setup
+### Prerequisites
 
-**File:** `src/lib/api.ts`
+- Node.js 18+
+- Backend running (see [backend repo](https://github.com/ShakurUrRahman/smart-inventory))
 
-```typescript
-import axios from 'axios';
-
-const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true, // Include cookies
-});
-
-// Request interceptor
-apiClient.interceptors.request.use((config) => {
-  // Add JWT token from localStorage if available
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Response interceptor
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
-
-export default apiClient;
-```
-
-### API Methods
-
-#### Products API
-
-```typescript
-// Get all products (users see own, admins see all)
-productsApi.getAllProducts({
-  search?: string;
-  category?: string;
-  status?: string;
-  approvalStatus?: 'approved' | 'pending' | 'rejected';
-  page?: number;
-  limit?: number;
-})
-
-// Create product (submits for approval)
-productsApi.createProduct(payload)
-
-// Update product (resets approved to pending)
-productsApi.updateProduct(id, payload)
-
-// Delete product (owner or admin only)
-productsApi.deleteProduct(id)
-
-// Restock product (owner or admin only)
-productsApi.restockProduct(id, { quantity })
-```
-
-#### Restock API
-
-```typescript
-// Get restock queue (users see own, admins see all)
-restockApi.getRestockQueue({
-  priority?: 'High' | 'Medium' | 'Low';
-  page?: number;
-  limit?: number;
-})
-
-// Resolve restock item
-restockApi.resolveRestockItem(id, { quantity })
-
-// Remove from queue
-restockApi.removeFromQueue(id)
-```
-
-#### Admin API
-
-```typescript
-// Get all users
-adminApi.getAllUsers()
-
-// Update user role
-adminApi.updateUserRole(userId, { role })
-
-// Update category permissions
-adminApi.updateCategoryPermissions(userId, {
-  canCreate?: boolean;
-  canUpdate?: boolean;
-  canDelete?: boolean;
-})
-
-// Approve product
-adminApi.approveProduct(productId)
-
-// Reject product
-adminApi.rejectProduct(productId, { reason })
-```
-
----
-
-## 🔐 Authentication & Authorization
-
-### Login Flow
-
-1. User enters email/password or clicks demo account
-2. POST `/auth/login` → Backend validates & returns JWT + user data
-3. JWT stored in HTTP-only cookie
-4. Zustand auth store updated with user data
-5. Middleware validates token on protected routes
-
-### Demo Accounts
-
-```typescript
-const DEMO_ACCOUNTS = [
-  { email: 'user@inventory.com', password: 'user123', role: 'User' },
-  { email: 'manager@inventory.com', password: 'manager123', role: 'Manager' },
-  { email: 'admin@inventory.com', password: 'admin123', role: 'Admin' },
-  { email: 'superadmin@inventory.com', password: 'superadmin123', role: 'Super Admin' },
-];
-```
-
-### usePermissions Hook
-
-```typescript
-const { isUser, isManager, isAdmin, isSuperAdmin } = usePermissions();
-
-if (isUser) {
-  // Render user-specific UI
-}
-
-if (isAdmin) {
-  // Render admin UI
-}
-```
-
-### Route Protection
-
-```typescript
-// Middleware: src/app/middleware.ts
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token');
-  
-  if (!token && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-  
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: ['/dashboard/:path*'],
-};
-```
-
----
-
-## 📄 Key Pages & Components
-
-### Authentication Pages
-
-#### Login Page
-- Demo account cards (4 roles)
-- Email/password form
-- Auto-fill on demo account click
-- Redirect to dashboard on success
-
-### Dashboard Pages
-
-#### Products Page
-**For Users:**
-- View own products tabbed by status (Approved, Pending, Rejected)
-- Filter by: status, category, approval status, search
-- Actions: Edit, Delete, Restock (own only)
-- Display rejection reason if rejected
-- Show pending approval message
-
-**For Admins:**
-- View ALL products
-- Filter by: status, category, approval status, creator, search
-- Actions: Edit, Delete, Restock (any)
-- Show product creator info
-- Approval status badges
-
-#### Restock Page
-- Real-time restock queue
-- Priority badges: High (red), Medium (yellow), Low (gray)
-- Tab filters by priority with live count badges
-- Resolve items → Updates stock
-- Remove items → Clears queue
-- User-based filtering (users see own, admins see all)
-
-#### Admin Panel
-- User management (view, edit roles)
-- Category permissions per manager:
-  - Global Create/Update/Delete toggles
-  - Affects all categories for that user
-- Activity logs
-- System analytics
-
----
-
-## 🔄 Data Flow
-
-### Product Creation Flow
-```
-1. User submits product form
-   ↓
-2. POST /api/products
-   ↓
-3. Backend: Create product with approvalStatus = "pending", createdBy = userId
-   ↓
-4. Response: Product object + success message
-   ↓
-5. Frontend: Invalidate queries, show success toast, redirect to Pending tab
-   ↓
-6. UI: Product appears in Pending tab, awaits admin approval
-```
-
-### Product Approval Flow
-```
-1. Admin clicks "Approve" on pending product
-   ↓
-2. PATCH /api/admin/products/:id/approve
-   ↓
-3. Backend: Update approvalStatus = "approved"
-   ↓
-4. Frontend: Invalidate products query, toast notification
-   ↓
-5. UI: Product moves from Pending → Approved tab
-```
-
-### Restock Flow
-```
-1. Product stock drops below threshold
-   ↓
-2. Backend: Automatically creates RestockQueue item
-   ↓
-3. User sees item in Restock page
-   ↓
-4. User clicks "Resolve" + enters quantity
-   ↓
-5. PATCH /api/restock/:id/resolve { quantity }
-   ↓
-6. Backend: Updates product.stock, marks item as resolved
-   ↓
-7. UI: Item disappears from queue, stock updates
-```
-
-### User Access Control Flow
-```
-GET /api/products
-  ↓
-Backend checks user role:
-  ├─ User? → Filter by createdBy = userId
-  ├─ Manager? → Return all products
-  └─ Admin? → Return all products
-  ↓
-Frontend: canManageProduct = isAdmin || product.createdBy._id === user._id
-  ↓
-UI: Show Edit/Delete only if canManage
-```
-
----
-
-## 🛠️ Development Guide
-
-### Running Locally
+### Installation
 
 ```bash
+# Clone the repo
+git clone https://github.com/ShakurUrRahman/smart-inventory.git
+cd smart-inventory/packages/frontend
+
 # Install dependencies
 npm install
-
-# Start dev server
-npm run dev
-
-# Open browser
-open http://localhost:3000
 ```
 
-### Development Scripts
+### Environment Variables
 
-```json
-{
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "next lint",
-  "type-check": "tsc --noEmit"
-}
-```
+Create `.env.local` in `packages/frontend/`:
 
-### Code Style
-
-- **TypeScript** - Strict mode enabled
-- **Prettier** - Auto-format (configured in `.prettierrc`)
-- **ESLint** - Enforce best practices
-
-### Creating New API Methods
-
-```typescript
-// src/lib/exampleApi.ts
-import apiClient from './api';
-
-export const exampleApi = {
-  getAll: async () => {
-    const response = await apiClient.get('/example');
-    return response.data;
-  },
-  
-  create: async (payload: any) => {
-    const response = await apiClient.post('/example', payload);
-    return response.data;
-  },
-  
-  update: async (id: string, payload: any) => {
-    const response = await apiClient.put(`/example/${id}`, payload);
-    return response.data;
-  },
-  
-  delete: async (id: string) => {
-    const response = await apiClient.delete(`/example/${id}`);
-    return response.data;
-  },
-};
-```
-
-### Using Tanstack Query
-
-```typescript
-// Fetch
-const { data, isLoading, error } = useQuery({
-  queryKey: ['products', filters],
-  queryFn: () => productsApi.getAllProducts(filters),
-});
-
-// Mutate
-const mutation = useMutation({
-  mutationFn: (payload) => productsApi.createProduct(payload),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['products'] });
-    toast.success('Created successfully!');
-  },
-  onError: (error) => {
-    toast.error(error.message);
-  },
-});
-```
-
----
-
-## 🚀 Deployment
-
-### Vercel Deployment
-
-1. **Push to GitHub**
-```bash
-git push origin main
-```
-
-2. **Connect to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Import repository
-   - Set environment variables
-
-3. **Configure Environment**
 ```env
-NEXT_PUBLIC_API_URL=https://your-backend.com/api
-NEXT_PUBLIC_APP_NAME=Smart Inventory
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+JWT_SECRET=your-jwt-secret-here
 ```
 
-4. **Deploy**
-   - Auto-deploys on push to main
-   - Vercel provides preview URLs
+> `JWT_SECRET` must match the backend's secret — used by Next.js middleware to verify tokens without a DB call.
 
-### Build Optimization
+### Run Development Server
 
 ```bash
-# Production build
-npm run build
-
-# Analyze bundle
-npm run build -- --analyze
-
-# Check types
-npm run type-check
+npm run dev
+# → http://localhost:3000
 ```
 
-### Performance Tips
+### Build for Production
 
-- ✅ Use `next/image` for images
-- ✅ Code splitting via dynamic imports
-- ✅ Optimize API calls with Tanstack Query caching
-- ✅ Use React.memo for heavy components
-- ✅ Lazy load modals and dialogs
-
----
-
-## 🐛 Troubleshooting
-
-### Authentication Issues
-
-**Problem:** "401 Unauthorized" on protected routes
-
-**Solution:**
-```typescript
-// Check token in cookies
-document.cookie // Look for 'token'
-
-// Check auth store
-const { user } = useAuthStore();
-console.log(user); // Should not be null
-
-// Verify API URL
-console.log(process.env.NEXT_PUBLIC_API_URL);
-```
-
-### API Call Failures
-
-**Problem:** "Network Error" or CORS issues
-
-**Solution:**
-```typescript
-// Check backend is running
-curl http://localhost:5000/api/health
-
-// Check API URL in .env.local
-NEXT_PUBLIC_API_URL=http://localhost:5000/api (no trailing slash)
-
-// Check credentials in request
-// Ensure withCredentials: true in axios config
-```
-
-### Data Not Updating
-
-**Problem:** Changes don't reflect in UI
-
-**Solution:**
-```typescript
-// Invalidate relevant query key
-queryClient.invalidateQueries({ queryKey: ['products'] });
-
-// Or full invalidation
-queryClient.invalidateQueries();
-```
-
-### Slow Load Times
-
-**Problem:** Page takes too long to load
-
-**Solution:**
-- Check Network tab in DevTools
-- Look for slow API endpoints
-- Use Tanstack Query's `staleTime` and `cacheTime`
-- Implement pagination/virtualization for large lists
-
-### Build Errors
-
-**Problem:** TypeScript or build errors
-
-**Solution:**
 ```bash
-# Type check
-npm run type-check
-
-# Clear cache
-rm -rf .next node_modules
-npm install
-
-# Rebuild
 npm run build
+npm start
 ```
 
 ---
 
-## 📚 Additional Resources
+## Deployment (Vercel)
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [React Documentation](https://react.dev)
-- [TailwindCSS Documentation](https://tailwindcss.com)
-- [Shadcn UI Documentation](https://ui.shadcn.com)
-- [Tanstack Query Documentation](https://tanstack.com/query/latest)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs)
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+1. Create a new Vercel project pointing to your repo
+2. Set **Root Directory** to `packages/frontend`
+3. Set **Framework Preset** to `Next.js`
+4. Add environment variables:
+    ```
+    NEXT_PUBLIC_API_URL=https://your-backend.vercel.app/api
+    JWT_SECRET=your-jwt-secret
+    ```
+5. Deploy
 
 ---
 
-## 👨‍💻 Contributors
+## Key Design Decisions
 
-- **Lead Developer:** [Your Name]
-- **Backend Team:** [Team Members]
-- **UI/UX Design:** [Designer]
+**`usePermissions` hook** — single source of truth for all role checks. Every permission is derived from the Zustand user store. Adding a new role only requires updating this one file.
 
----
+**Two-query pattern for paginated + filtered data** — the restock page uses one query for the filtered table data and a separate stable query for priority counts, preventing counts from changing when filters are applied.
 
-## 📞 Support
+**Client-side tab filtering** — user product tabs (All/Approved/Pending/Rejected) filter client-side from a single fetch, avoiding multiple network requests for tab switching.
 
-For issues or questions:
-- 📧 Email: support@inventory.com
-- 💬 Discord: [Join Server](link)
-- 🐛 GitHub Issues: [Report Issue](link)
+**`(req as any).user` pattern** — Express global type augmentation is unreliable in monorepo setups. All middleware and controllers use this cast to avoid TypeScript errors.
+
+**`queryClient.clear()` on logout** — prevents data from a previous user's session appearing briefly after switching accounts.
 
 ---
 
-**Last Updated:** April 12, 2026  
-**Version:** 1.0.0
+## Default Demo Credentials
+
+After running `/api/seed`:
+
+| Role        | Email                      | Password       |
+| ----------- | -------------------------- | -------------- |
+| Super Admin | superadmin@inventoryos.com | SuperAdmin123! |
+| Admin       | admin@inventoryos.com      | Admin123!      |
+| Manager     | manager@inventoryos.com    | Manager123!    |
+| User        | user@inventoryos.com       | User123!       |
+
+---
+
+## License
+
+MIT
